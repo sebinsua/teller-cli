@@ -1,0 +1,8 @@
+[package]
+name = "teller_cli"
+version = "0.0.1"
+authors = ["Seb Insua <me@sebinsua.com>"]
+
+[[bin]]
+name = "teller-cli"
+path = "src/main.rs"
