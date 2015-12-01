@@ -45,23 +45,44 @@ impl Config {
     }
 }
 
-fn get_config_file(config_path: &PathBuf) -> File {
-    let display = config_path.display();
-    let f = match File::open(&config_path) {
-        Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why)),
-        Ok(file) => file,
-    };
+// TODO: Work out when to use matching
+//       and when to use try! and when to
+//       use something else.
 
-    f
+fn get_config_path() -> PathBuf {
+    match env::home_dir() {
+        Some(mut p) => {
+            p.push(".tellerrc");
+            p
+        },
+        None => panic!("Impossible to get your home directory!"),
+    }
 }
 
-fn get_config(config_path: &PathBuf) -> Config {
-    let mut f = get_config_file(config_path);
+fn get_config_file() -> File {
+    let config_path = get_config_path();
 
-    let display = config_path.display();
+    match File::open(&config_path) {
+        Err(why) => panic!("couldn't open {} to read: {}", config_path.display(), Error::description(&why)),
+        Ok(file) => file,
+    }
+}
+
+fn get_config_file_to_write() -> File {
+    let config_path = get_config_path();
+
+    match File::create(&config_path) {
+        Err(why) => panic!("couldn't open {} to write: {}", config_path.display(), Error::description(&why)),
+        Ok(file) => file,
+    }
+}
+
+fn read_config() -> Config {
+    let mut config_file = get_config_file();
+
     let mut content_str = String::new();
-    match f.read_to_string(&mut content_str) {
-        Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
+    match config_file.read_to_string(&mut content_str) {
+        Err(why) => panic!("couldn't read: {}", Error::description(&why)),
         Ok(_) => (),
     }
 
@@ -69,8 +90,12 @@ fn get_config(config_path: &PathBuf) -> Config {
     return config;
 }
 
-fn set_config(config: Config) {
+fn write_config(config: &Config) {
+    let mut config_file = get_config_file_to_write();
 
+    let content_str = json::encode(&config).unwrap();
+
+    config_file.write_all(content_str.as_bytes());
 }
 
 fn main() {
@@ -82,15 +107,9 @@ fn main() {
                             .unwrap_or_else(|e| e.exit());
     println!("{:?}", args);
 
-    let config_path: PathBuf = match env::home_dir() {
-        Some(mut p) => {
-            p.push(".tellerrc");
-            p
-        },
-        None => panic!("Impossible to get your home directory!"),
-    };
-
-    let config = get_config(&config_path);
+    // TODO: If there is a config file then read it,
+    //       otherwise ask a question and write to it.
+    let config = read_config();
     println!("{}", config.auth_token);
 
     println!("What's the auth token?");
@@ -104,6 +123,8 @@ fn main() {
     let new_config = Config::new(auth_token);
 
     println!("fake token: {}", new_config.auth_token);
+
+    write_config(&new_config);
 
     ()
 }
