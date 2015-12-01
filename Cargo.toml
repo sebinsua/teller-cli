@@ -4,5 +4,9 @@ version = "0.0.1"
 authors = ["Seb Insua <me@sebinsua.com>"]
 
 [[bin]]
-name = "teller-cli"
+name = "teller"
 path = "src/main.rs"
+
+[dependencies]
+docopt = "0.6"
+rustc-serialize = "0.3"
