@@ -12,18 +12,17 @@ use std::fs::File;
 use rustc_serialize::json;
 
 // TODO:
-// Support more arguments and commands.
 // teller list accounts
-// teller show current balance
-// teller show business balance
-// teller show savings balance
+// teller show balance current
+// teller show balance business
+// teller show balance savings
 //
-// teller list current transactions
-// teller list current direct-debits
-// teller list current standing-orders
-// teller list current payment-mechanisms
+// teller list transactions current
+// teller list direct-debits current
+// teller list standing-orders current
+// teller list payment-mechanisms current
 //
-// teller search current transactions --query=<query>
+// teller search transactions --query=<query> current
 //
 // teller send <amount> [<currency>] --from=<from> --to=<to>
 
