@@ -15,3 +15,17 @@
 - [ ] Write `README.md`.
 - [ ] Write unit tests.
 - [ ] Add shields.
+
+## FAQ
+
+#### Compiling gives `openssl/hmac.h` not found error
+
+Ensure that both Homebrew and `openssl` are installed, and then [try running `brew link --force openssl`](https://github.com/sfackler/rust-openssl/issues/255).
+
+This relates to the following error:
+
+```
+--- stderr
+src/openssl_shim.c:1:10: fatal error: 'openssl/hmac.h' file not found
+#include <openssl/hmac.h>
+```

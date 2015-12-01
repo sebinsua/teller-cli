@@ -95,7 +95,7 @@ fn write_config(config: &Config) {
 
     let content_str = json::encode(&config).unwrap();
 
-    config_file.write_all(content_str.as_bytes());
+    config_file.write_all(content_str.as_bytes()).unwrap()
 }
 
 fn main() {
