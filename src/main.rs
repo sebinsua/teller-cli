@@ -37,6 +37,14 @@ struct Config {
     auth_token: String,
 }
 
+impl Config {
+    pub fn new(auth_token: String) -> Config {
+        Config {
+            auth_token: auth_token,
+        }
+    }
+}
+
 fn get_config_file(config_path: &PathBuf) -> File {
     let display = config_path.display();
     let f = match File::open(&config_path) {
@@ -91,6 +99,11 @@ fn main() {
         Ok(_) => println!("{}", input),
         Err(error) => println!("error: {}", error),
     };
+
+    let auth_token = String::new();
+    let new_config = Config::new(auth_token);
+
+    println!("fake token: {}", new_config.auth_token);
 
     ()
 }
