@@ -36,22 +36,20 @@ struct Config {
     auth_token: String,
 }
 
-fn get_config() -> Config {
-    let config_path: PathBuf = match env::home_dir() {
-        Some(mut p) => {
-            p.push(".tellerrc");
-            p
-        },
-        None => panic!("Impossible to get your home directory!"),
-    };
-
+fn get_config_file(config_path: &PathBuf) -> File {
     let display = config_path.display();
-    println!("{}", display);
-    let mut f = match File::open(&config_path) {
+    let f = match File::open(&config_path) {
         Err(why) => panic!("couldn't open {}: {}", display, Error::description(&why)),
         Ok(file) => file,
     };
 
+    f
+}
+
+fn get_config(config_path: &PathBuf) -> Config {
+    let mut f = get_config_file(config_path);
+
+    let display = config_path.display();
     let mut content_str = String::new();
     match f.read_to_string(&mut content_str) {
         Err(why) => panic!("couldn't read {}: {}", display, Error::description(&why)),
@@ -60,6 +58,10 @@ fn get_config() -> Config {
 
     let config: Config = json::decode(&content_str).unwrap();
     return config;
+}
+
+fn set_config(config: Config) {
+
 }
 
 fn main() {
@@ -71,8 +73,16 @@ fn main() {
                             .unwrap_or_else(|e| e.exit());
     println!("{:?}", args);
 
-    let config = get_config();
+    let config_path: PathBuf = match env::home_dir() {
+        Some(mut p) => {
+            p.push(".tellerrc");
+            p
+        },
+        None => panic!("Impossible to get your home directory!"),
+    };
+
+    let config = get_config(&config_path);
     println!("{}", config.auth_token);
 
-    ();
+    ()
 }
