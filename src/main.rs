@@ -6,6 +6,7 @@ use docopt::Docopt;
 use std::env;
 use std::path::PathBuf;
 use std::error::Error;
+use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use rustc_serialize::json;
@@ -83,6 +84,13 @@ fn main() {
 
     let config = get_config(&config_path);
     println!("{}", config.auth_token);
+
+    println!("What's the auth token?");
+    let mut input = String::new();
+    match io::stdin().read_line(&mut input) {
+        Ok(_) => println!("{}", input),
+        Err(error) => println!("error: {}", error),
+    };
 
     ()
 }
