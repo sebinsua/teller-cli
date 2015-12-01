@@ -11,6 +11,22 @@ use std::io::prelude::*;
 use std::fs::File;
 use rustc_serialize::json;
 
+// TODO:
+// Support more arguments and commands.
+// teller list accounts
+// teller show current balance
+// teller show business balance
+// teller show savings balance
+//
+// teller list current transactions
+// teller list current direct-debits
+// teller list current standing-orders
+// teller list current payment-mechanisms
+//
+// teller search current transactions --query=<query>
+//
+// teller send <amount> [<currency>] --from=<from> --to=<to>
+
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
 Banking for your command line.

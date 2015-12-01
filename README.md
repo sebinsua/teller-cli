@@ -1,5 +1,7 @@
 # teller-cli
 
+The purpose of this command line tool is to provide a human-interface for your bank and not merely to be a one-to-one match with the underlying API.
+
 ### TODO
 
 - [ ] Come up with a good `docopt`s.
@@ -11,6 +13,7 @@
 - [ ] Print the list of accounts in a table.
 - [ ] If `is_first_time` then fetch the list of accounts and ask questions to alias each of these as their `last_4_digits`.
 - [ ] Implement `teller show current --balance`.
+- [ ] If `show <account_alias>` is not an alias check to see if it is a real account.
 - [ ] Refactor `TellerService`.
 - [ ] Write `README.md`.
 - [ ] Write unit tests.
