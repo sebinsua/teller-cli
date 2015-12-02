@@ -2,6 +2,7 @@ extern crate rustc_serialize;
 extern crate docopt;
 
 use docopt::Docopt;
+use rustc_serialize::{Decodable, Decoder};
 
 use std::env;
 use std::path::PathBuf;
@@ -36,9 +37,25 @@ struct Args {
     cmd_accounts: bool,
     cmd_show: bool,
     cmd_balance: bool,
-    arg_account: String,
+    arg_account: AccountType,
     flag_help: bool,
     flag_version: bool,
+}
+
+#[derive(Debug)]
+enum AccountType { Current, Savings, Business, Unknown(String), None }
+
+impl Decodable for AccountType {
+    fn decode<D: Decoder>(d: &mut D) -> Result<AccountType, D::Error> {
+        let s = try!(d.read_str());
+        Ok(match &*s {
+            "" => AccountType::None,
+            "current" => AccountType::Current,
+            "savings" => AccountType::Savings,
+            "business" => AccountType::Business,
+            s => AccountType::Unknown(s.to_string()),
+        })
+    }
 }
 
 #[derive(RustcEncodable, RustcDecodable)]
