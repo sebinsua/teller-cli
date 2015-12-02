@@ -155,7 +155,7 @@ fn write_config(config: &Config) {
 }
 
 #[allow(dead_code)]
-fn list_accounts() {
+fn list_accounts() -> AccountsResponse {
     let client = Client::new();
 
     let mut res = client.get("https://api.teller.io/accounts")
@@ -171,16 +171,17 @@ fn list_accounts() {
     res.read_to_string(&mut body).unwrap();
 
     println!("Response: {}", body);
-    let account_response: AccountsResponse = match json::decode(&body) {
+    let accounts_response: AccountsResponse = match json::decode(&body) {
         Ok(x) => x,
         Err(why) => panic!("Failed decoding the JSON! Reason: {}", why),
     };
 
-    println!("{:?}", account_response);
+    println!("{:?}", accounts_response);
+    accounts_response
 }
 
 #[allow(dead_code)]
-fn show_account_balance() {
+fn show_account_balance() -> String {
     let client = Client::new();
 
     let mut res = client.get("https://api.teller.io/accounts/4803f712-cc3e-4560-9f80-3be8116d7723")
@@ -203,6 +204,7 @@ fn show_account_balance() {
     println!("Response: {}", body);
     println!("{:?}", account_response);
 
+    account_response.data.balance
 }
 
 fn main() {
