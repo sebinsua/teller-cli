@@ -142,8 +142,7 @@ fn read_config() -> Config {
         Ok(_) => (),
     }
 
-    let config: Config = json::decode(&content_str).unwrap();
-    return config;
+    json::decode(&content_str).unwrap()
 }
 
 fn write_config(config: &Config) {
@@ -154,34 +153,90 @@ fn write_config(config: &Config) {
     config_file.write_all(content_str.as_bytes()).unwrap()
 }
 
-#[allow(dead_code)]
-fn list_accounts() -> AccountsResponse {
+// TODO: Turns out you've been polluting the namespace really really badly
+//       and you're gonna need to fix that!
+#[derive(Debug)]
+enum ApiServiceError {
+    HttpClientError(hyper::error::Error),
+    IoError(io::Error),
+    JsonParseError(rustc_serialize::json::DecoderError),
+}
+
+impl std::fmt::Display for ApiServiceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "fake display")
+    }
+}
+
+impl From<hyper::error::Error> for ApiServiceError {
+    fn from(e: hyper::error::Error) -> ApiServiceError {
+        ApiServiceError::HttpClientError(e)
+    }
+}
+
+impl From<io::Error> for ApiServiceError {
+    fn from(e: io::Error) -> ApiServiceError {
+        ApiServiceError::IoError(e)
+    }
+}
+
+impl From<rustc_serialize::json::DecoderError> for ApiServiceError {
+    fn from(e: rustc_serialize::json::DecoderError) -> ApiServiceError {
+        ApiServiceError::JsonParseError(e)
+    }
+}
+
+impl std::error::Error for ApiServiceError {
+    fn description(&self) -> &str {
+        match *self {
+            ApiServiceError::HttpClientError(_) => "Api Error",
+            ApiServiceError::IoError(_) => "I/O Error",
+            ApiServiceError::JsonParseError(_) => "JSON parsing error",
+        }
+    }
+
+    fn cause(&self) -> Option<&std::error::Error> {
+        match *self {
+            ApiServiceError::HttpClientError(ref err) => Some(err as &std::error::Error),
+            ApiServiceError::IoError(ref err) => Some(err as &std::error::Error),
+            ApiServiceError::JsonParseError(ref err) => Some(err as &std::error::Error),
+        }
+    }
+}
+
+type ApiServiceResult<T> = Result<T, ApiServiceError>;
+
+fn get_accounts() -> ApiServiceResult<AccountsResponse> {
     let client = Client::new();
 
-    let mut res = client.get("https://api.teller.io/accounts")
-                        .header(Authorization(
-                            Bearer {
-                                token: TOKEN.to_owned()
-                            }
-                        ))
-                        .send()
-                        .unwrap();
+    let auth_header = Authorization(
+        Bearer {
+            token: TOKEN.to_owned()
+        }
+    );
+
+    let mut res = try!(client.get("https://api.teller.io/accounts")
+                             .header(auth_header)
+                             .send()
+                             .and_then(|r| {
+                                 if r.status.is_client_error() {
+                                     Err(hyper::error::Error::Status)
+                                 } else {
+                                     Ok(r)
+                                 }
+                             }));
 
     let mut body = String::new();
-    res.read_to_string(&mut body).unwrap();
+    try!(res.read_to_string(&mut body));
 
     println!("Response: {}", body);
-    let accounts_response: AccountsResponse = match json::decode(&body) {
-        Ok(x) => x,
-        Err(why) => panic!("Failed decoding the JSON! Reason: {}", why),
-    };
+    let accounts_response = try!(json::decode(&body));
 
-    println!("{:?}", accounts_response);
-    accounts_response
+    Ok(accounts_response)
 }
 
 #[allow(dead_code)]
-fn show_account_balance() -> String {
+fn get_account() -> AccountResponse {
     let client = Client::new();
 
     let mut res = client.get("https://api.teller.io/accounts/4803f712-cc3e-4560-9f80-3be8116d7723")
@@ -196,23 +251,28 @@ fn show_account_balance() -> String {
     let mut body = String::new();
     res.read_to_string(&mut body).unwrap();
 
-    let account_response: AccountResponse = match json::decode(&body) {
+    println!("Response: {}", body);
+    match json::decode(&body) {
         Ok(x) => x,
         Err(why) => panic!("Failed decoding the JSON! Reason: {}", why),
-    };
+    }
+}
 
-    println!("Response: {}", body);
-    println!("{:?}", account_response);
-
+#[allow(dead_code)]
+fn get_account_balance() -> String {
+    let account_response = get_account();
     account_response.data.balance
 }
 
 fn main() {
     // TODO: Currently this gets data but it will panic! if no JSON comes back, for example if we
     //       get a 500 server error. (There is no `error` property bizarrely.)
-    list_accounts();
+    match get_accounts() {
+        Ok(_) => println!("dont print value "),
+        Err(why) => println!("error: {}", std::error::Error::description(&why)),
+    }
 
-    show_account_balance();
+    // get_account_balance();
 
     let args: Args = Docopt::new(USAGE)
                             .and_then(|d| {

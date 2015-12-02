@@ -4,6 +4,8 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 ### Styling recommendations that I will try to follow
 
+- Map over results or chaining monadic-like operations.
+  See: https://news.ycombinator.com/item?id=7792456
 - Prefer `try!` to tedious result matching to pass errors back.
   See: https://github.com/rust-lang/rust/blob/master/src/doc/style/errors/ergonomics.md
   `-> Result<(), IoError>`
