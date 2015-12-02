@@ -11,29 +11,19 @@ use std::io::prelude::*;
 use std::fs::File;
 use rustc_serialize::json;
 
-// TODO:
-// teller list accounts
-// teller show balance current
-// teller show balance business
-// teller show balance savings
-//
-// teller list transactions current
-// teller list direct-debits current
-// teller list standing-orders current
-// teller list payment-mechanisms current
-//
-// teller search transactions --query=<query> current
-//
-// teller send <amount> [<currency>] --from=<from> --to=<to>
-
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
-Banking for your command line.
+Banking for the command line.
 
 Usage:
-    teller show [ --current | --business ]
+    teller list accounts
+    teller show balance <account>
     teller -h | --help
     teller -V | --version
+
+Commands:
+    list accounts   List accounts.
+    show balance    Show the balance of an account.
 
 Options:
     -h --help       Show this screen.
@@ -42,7 +32,11 @@ Options:
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
+    cmd_list: bool,
+    cmd_accounts: bool,
     cmd_show: bool,
+    cmd_balance: bool,
+    arg_account: String,
     flag_help: bool,
     flag_version: bool,
 }

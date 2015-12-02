@@ -6,6 +6,7 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 - [ ] Come up with a good `docopt`s.
 - [ ] Refactor to use `try!` and `get!`.
+- [ ] `account` will probably be `(current|business|savings)`.
 - [ ] Work out the best way of modularising and refactoring the config code.
 - [ ] Refactor question to answer.
 - [ ] If there is no config ask a question and save a config containing the answer. Set `is_first_time`.
