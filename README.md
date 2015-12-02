@@ -4,7 +4,9 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 ### TODO
 
-- [ ] Come up with a good `docopt`s.
+- [x] Come up with a good `docopt`s.
+- [ ] Make a simple list accounts request.
+- [ ] Make a simple account request and get its balance.
 - [ ] Refactor to use `try!` and `get!`.
 - [ ] `account` will probably be `(current|business|savings)`.
 - [ ] Work out the best way of modularising and refactoring the config code.

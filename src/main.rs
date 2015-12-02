@@ -124,6 +124,16 @@ fn write_config(config: &Config) {
     config_file.write_all(content_str.as_bytes()).unwrap()
 }
 
+#[allow(dead_code)]
+fn list_accounts() {
+    unimplemented!()
+}
+
+#[allow(dead_code)]
+fn show_account_balance() {
+    unimplemented!()
+}
+
 fn main() {
     let args: Args = Docopt::new(USAGE)
                             .and_then(|d| {
