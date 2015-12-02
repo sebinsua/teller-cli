@@ -1,6 +1,8 @@
 extern crate rustc_serialize;
 extern crate docopt;
 
+extern crate hyper;
+
 use docopt::Docopt;
 use rustc_serialize::{Decodable, Decoder};
 
@@ -11,6 +13,12 @@ use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use rustc_serialize::json;
+
+use hyper::Client;
+use hyper::header::{Authorization, Bearer};
+
+// TODO: This is only temporary...
+const TOKEN: &'static str = "";
 
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
@@ -71,6 +79,28 @@ impl Config {
     }
 }
 
+#[derive(Debug, RustcDecodable)]
+struct AccountResponse {
+    data: Account,
+}
+
+#[derive(Debug, RustcDecodable)]
+struct AccountsResponse {
+    data: Vec<Account>,
+}
+
+#[derive(Debug, RustcDecodable)]
+struct Account {
+    updated_at: String,
+    institution: String,
+    id: String,
+    currency: String,
+    balance: String,
+    account_number_last_4: String,
+}
+// TODO: Maybe will need to deserialize with this:
+// http://valve.github.io/blog/2014/08/26/json-serialization-in-rust-part-2/
+
 // TODO: Work out when to use matching
 //       and when to use try! and when to
 //       use something else.
@@ -126,15 +156,62 @@ fn write_config(config: &Config) {
 
 #[allow(dead_code)]
 fn list_accounts() {
-    unimplemented!()
+    let client = Client::new();
+
+    let mut res = client.get("https://api.teller.io/accounts")
+                        .header(Authorization(
+                            Bearer {
+                                token: TOKEN.to_owned()
+                            }
+                        ))
+                        .send()
+                        .unwrap();
+
+    let mut body = String::new();
+    res.read_to_string(&mut body).unwrap();
+
+    println!("Response: {}", body);
+    let account_response: AccountsResponse = match json::decode(&body) {
+        Ok(x) => x,
+        Err(why) => panic!("Failed decoding the JSON! Reason: {}", why),
+    };
+
+    println!("{:?}", account_response);
 }
 
 #[allow(dead_code)]
 fn show_account_balance() {
-    unimplemented!()
+    let client = Client::new();
+
+    let mut res = client.get("https://api.teller.io/accounts/4803f712-cc3e-4560-9f80-3be8116d7723")
+                        .header(Authorization(
+                            Bearer {
+                                token: TOKEN.to_owned()
+                            }
+                        ))
+                        .send()
+                        .unwrap();
+
+    let mut body = String::new();
+    res.read_to_string(&mut body).unwrap();
+
+    let account_response: AccountResponse = match json::decode(&body) {
+        Ok(x) => x,
+        Err(why) => panic!("Failed decoding the JSON! Reason: {}", why),
+    };
+
+    println!("Response: {}", body);
+    println!("{:?}", account_response);
+
 }
 
 fn main() {
+    // TODO: Currently this gets data but it will panic! if no JSON comes back, for example if we
+    //       get a 500 server error. (There is no `error` property bizarrely.)
+    list_accounts();
+
+    show_account_balance();
+
     let args: Args = Docopt::new(USAGE)
                             .and_then(|d| {
                                 d.version(VERSION.map(|v| v.to_string()))

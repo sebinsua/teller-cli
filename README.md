@@ -8,6 +8,12 @@ The purpose of this command line tool is to provide a human-interface for your b
 - [ ] Make a simple list accounts request.
 - [ ] Make a simple account request and get its balance.
 - [ ] Refactor to use `try!` and `get!`.
+      See:
+      https://www.reddit.com/r/rust/comments/23amxp/is_there_an_equivalent_to_the_try_macro_for_option/
+      See:
+      https://doc.rust-lang.org/std/io/enum.ErrorKind.html
+      See:
+      http://stackoverflow.com/questions/31172451/is-there-a-non-messy-way-to-chain-the-results-of-functions-that-return-option-va
 - [ ] `account` will probably be `(current|business|savings)`.
 - [ ] Work out the best way of modularising and refactoring the config code.
 - [ ] Refactor question to answer.
