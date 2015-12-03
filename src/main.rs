@@ -106,13 +106,12 @@ struct Account {
 //       use something else.
 
 fn get_config_path() -> PathBuf {
-    match env::home_dir() {
-        Some(mut p) => {
-            p.push(".tellerrc");
-            p
-        },
-        None => panic!("Impossible to get your home directory!"),
-    }
+    let fallback_config_path = PathBuf::from("./.tellerrc");
+    let append_config_file = |mut p: PathBuf| {
+        p.push(".tellerrc");
+        p
+    };
+    env::home_dir().map_or(fallback_config_path, append_config_file)
 }
 
 fn get_config_file() -> File {
