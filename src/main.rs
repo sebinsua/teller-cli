@@ -114,42 +114,37 @@ fn get_config_path() -> PathBuf {
     env::home_dir().map_or(fallback_config_path, append_config_file)
 }
 
-fn get_config_file() -> File {
+fn get_config_file() -> Result<File, io::Error> {
     let config_path = get_config_path();
-
-    match File::open(&config_path) {
-        Err(why) => panic!("couldn't open {} to read: {}", config_path.display(), Error::description(&why)),
-        Ok(file) => file,
-    }
+    File::open(&config_path)
 }
 
-fn get_config_file_to_write() -> File {
+fn get_config_file_to_write() -> Result<File, io::Error> {
     let config_path = get_config_path();
-
-    match File::create(&config_path) {
-        Err(why) => panic!("couldn't open {} to write: {}", config_path.display(), Error::description(&why)),
-        Ok(file) => file,
-    }
+    File::create(&config_path)
 }
 
-fn read_config() -> Config {
-    let mut config_file = get_config_file();
+// TODO: Switch to custom errors instead of Box<Error>.
+fn read_config() -> Result<Config, Box<std::error::Error>> {
+    let mut config_file = try!(get_config_file());
 
     let mut content_str = String::new();
-    match config_file.read_to_string(&mut content_str) {
-        Err(why) => panic!("couldn't read: {}", Error::description(&why)),
-        Ok(_) => (),
-    }
+    try!(config_file.read_to_string(&mut content_str));
 
-    json::decode(&content_str).unwrap()
+    let config: Config = try!(json::decode(&content_str));
+
+    Ok(config)
 }
 
-fn write_config(config: &Config) {
-    let mut config_file = get_config_file_to_write();
+// TODO: Switch to custom errors instead of Box<Error>.
+fn write_config(config: &Config) -> Result<(), Box<std::error::Error>> {
+    let mut config_file = try!(get_config_file_to_write());
 
-    let content_str = json::encode(&config).unwrap();
+    let content_str = try!(json::encode(&config));
 
-    config_file.write_all(content_str.as_bytes()).unwrap()
+    try!(config_file.write_all(content_str.as_bytes()));
+
+    Ok(())
 }
 
 // TODO: Turns out you've been polluting the namespace really really badly
@@ -235,32 +230,38 @@ fn get_accounts() -> ApiServiceResult<AccountsResponse> {
 }
 
 #[allow(dead_code)]
-fn get_account() -> AccountResponse {
+fn get_account() -> ApiServiceResult<AccountResponse> {
     let client = Client::new();
 
-    let mut res = client.get("https://api.teller.io/accounts/4803f712-cc3e-4560-9f80-3be8116d7723")
-                        .header(Authorization(
-                            Bearer {
-                                token: TOKEN.to_owned()
-                            }
-                        ))
-                        .send()
-                        .unwrap();
+    let auth_header = Authorization(
+        Bearer {
+            token: TOKEN.to_owned()
+        }
+    );
+
+    let mut res = try!(client.get("https://api.teller.io/accounts/4803f712-cc3e-4560-9f80-3be8116d7723")
+                             .header(auth_header)
+                             .send()
+                             .and_then(|r| {
+                                if r.status.is_client_error() {
+                                    Err(hyper::error::Error::Status)
+                                } else {
+                                    Ok(r)
+                                }
+                            }));
 
     let mut body = String::new();
-    res.read_to_string(&mut body).unwrap();
+    try!(res.read_to_string(&mut body));
 
     println!("Response: {}", body);
-    match json::decode(&body) {
-        Ok(x) => x,
-        Err(why) => panic!("Failed decoding the JSON! Reason: {}", why),
-    }
+    let account_response = try!(json::decode(&body));
+
+    Ok(account_response)
 }
 
 #[allow(dead_code)]
-fn get_account_balance() -> String {
-    let account_response = get_account();
-    account_response.data.balance
+fn get_account_balance() -> ApiServiceResult<String> {
+    get_account().map(|r| r.data.balance)
 }
 
 fn main() {
@@ -283,7 +284,10 @@ fn main() {
 
     // TODO: If there is a config file then read it,
     //       otherwise ask a question and write to it.
-    let config = read_config();
+    let config = match read_config() {
+        Ok(config) => config,
+        Err(why) => panic!("config could not be read"),
+    };
     println!("{}", config.auth_token);
 
     println!("What's the auth token?");
@@ -298,7 +302,7 @@ fn main() {
 
     println!("fake token: {}", new_config.auth_token);
 
-    write_config(&new_config);
+    let _ = write_config(&new_config);
 
     ()
 }
