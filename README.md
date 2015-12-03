@@ -57,16 +57,17 @@ The purpose of this command line tool is to provide a human-interface for your b
       https://doc.rust-lang.org/std/io/enum.ErrorKind.html
       See:
       http://stackoverflow.com/questions/31172451/is-there-a-non-messy-way-to-chain-the-results-of-functions-that-return-option-va
-- [ ] Create custom errors for the config. 
+- [x] Create custom errors for the config.
 - [x] `account` will probably be `(current|business|savings)`. Hardcode this into the config to begin with.
-- [ ] Work out the best way of modularising and refactoring the config code.
-- [ ] Modularise the inquirer'esque code. Refactor question to answer.
+- [ ] Modularise and refactor the config code.
+- [ ] Modularise and refactor the requests code into `TellerClientService`.
+- [ ] Modularise the inquirer'esque code.
+- [ ] Ensure that custom errors have sensible content.
 - [ ] If there is no config ask a question and save a config containing the answer. Set `is_first_time`.
 - [ ] Logic to print the list of accounts to help with naming them.
 - [ ] If `is_first_time` then fetch the list of accounts and ask questions to alias each of these as their `last_4_digits`.
 - [ ] Implement `teller show current --balance`.
 - [ ] If `show <account_alias>` is not an alias check to see if it is a real account.
-- [ ] Refactor `TellerService`.
 - [ ] Write `README.md`.
 - [ ] Write unit tests.
 - [ ] Add shields.
