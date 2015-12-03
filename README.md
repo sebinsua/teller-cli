@@ -49,14 +49,15 @@ The purpose of this command line tool is to provide a human-interface for your b
 - [x] Come up with a good `docopt`s.
 - [x] Make a simple list accounts request.
 - [x] Make a simple account request and get its balance.
-- [ ] Remove all uses of unwrap - handle errors correctly. See todo item immediately below.
-- [ ] Refactor to use `try!` and `get!`.
+- [x] Remove all uses of unwrap - handle errors correctly. See todo item immediately below.
+- [x] Refactor to use `try!` and `get!`.
       See:
       https://www.reddit.com/r/rust/comments/23amxp/is_there_an_equivalent_to_the_try_macro_for_option/
       See:
       https://doc.rust-lang.org/std/io/enum.ErrorKind.html
       See:
       http://stackoverflow.com/questions/31172451/is-there-a-non-messy-way-to-chain-the-results-of-functions-that-return-option-va
+- [ ] Create custom errors for the config. 
 - [x] `account` will probably be `(current|business|savings)`. Hardcode this into the config to begin with.
 - [ ] Work out the best way of modularising and refactoring the config code.
 - [ ] Modularise the inquirer'esque code. Refactor question to answer.
