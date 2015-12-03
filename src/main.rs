@@ -105,6 +105,55 @@ struct Account {
 //       and when to use try! and when to
 //       use something else.
 
+#[derive(Debug)]
+enum ConfigError {
+    IoError(io::Error),
+    JsonParseError(rustc_serialize::json::DecoderError),
+    JsonStringifyError(rustc_serialize::json::EncoderError),
+}
+
+impl std::fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "fake display")
+    }
+}
+
+impl From<io::Error> for ConfigError {
+    fn from(e: io::Error) -> ConfigError {
+        ConfigError::IoError(e)
+    }
+}
+
+impl From<rustc_serialize::json::DecoderError> for ConfigError {
+    fn from(e: rustc_serialize::json::DecoderError) -> ConfigError {
+        ConfigError::JsonParseError(e)
+    }
+}
+
+impl From<rustc_serialize::json::EncoderError> for ConfigError {
+    fn from(e: rustc_serialize::json::EncoderError) -> ConfigError {
+        ConfigError::JsonStringifyError(e)
+    }
+}
+
+impl std::error::Error for ConfigError {
+    fn description(&self) -> &str {
+        match *self {
+            ConfigError::IoError(_) => "I/O Error",
+            ConfigError::JsonParseError(_) => "JSON parsing error",
+            ConfigError::JsonStringifyError(_) => "JSON stringify error",
+        }
+    }
+
+    fn cause(&self) -> Option<&std::error::Error> {
+        match *self {
+            ConfigError::IoError(ref err) => Some(err as &std::error::Error),
+            ConfigError::JsonParseError(ref err) => Some(err as &std::error::Error),
+            ConfigError::JsonStringifyError(ref err) => Some(err as &std::error::Error),
+        }
+    }
+}
+
 fn get_config_path() -> PathBuf {
     let fallback_config_path = PathBuf::from("./.tellerrc");
     let append_config_file = |mut p: PathBuf| {
@@ -124,8 +173,7 @@ fn get_config_file_to_write() -> Result<File, io::Error> {
     File::create(&config_path)
 }
 
-// TODO: Switch to custom errors instead of Box<Error>.
-fn read_config() -> Result<Config, Box<std::error::Error>> {
+fn read_config() -> Result<Config, ConfigError> {
     let mut config_file = try!(get_config_file());
 
     let mut content_str = String::new();
@@ -136,8 +184,7 @@ fn read_config() -> Result<Config, Box<std::error::Error>> {
     Ok(config)
 }
 
-// TODO: Switch to custom errors instead of Box<Error>.
-fn write_config(config: &Config) -> Result<(), Box<std::error::Error>> {
+fn write_config(config: &Config) -> Result<(), ConfigError> {
     let mut config_file = try!(get_config_file_to_write());
 
     let content_str = try!(json::encode(&config));
