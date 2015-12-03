@@ -46,23 +46,10 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 ### TODO
 
-- [x] Come up with a good `docopt`s.
-- [x] Make a simple list accounts request.
-- [x] Make a simple account request and get its balance.
-- [x] Remove all uses of unwrap - handle errors correctly. See todo item immediately below.
-- [x] Refactor to use `try!` and `get!`.
-      See:
-      https://www.reddit.com/r/rust/comments/23amxp/is_there_an_equivalent_to_the_try_macro_for_option/
-      See:
-      https://doc.rust-lang.org/std/io/enum.ErrorKind.html
-      See:
-      http://stackoverflow.com/questions/31172451/is-there-a-non-messy-way-to-chain-the-results-of-functions-that-return-option-va
-- [x] Create custom errors for the config.
-- [x] `account` will probably be `(current|business|savings)`. Hardcode this into the config to begin with.
 - [ ] Modularise and refactor the config code.
 - [ ] Modularise and refactor the requests code into `TellerClientService`.
 - [ ] Modularise the inquirer'esque code.
-- [ ] Ensure that custom errors have sensible content.
+- [ ] Ensure that custom errors have sensible content. See: https://doc.rust-lang.org/beta/std/fmt/
 - [ ] If there is no config ask a question and save a config containing the answer. Set `is_first_time`.
 - [ ] Logic to print the list of accounts to help with naming them.
 - [ ] If `is_first_time` then fetch the list of accounts and ask questions to alias each of these as their `last_4_digits`.
