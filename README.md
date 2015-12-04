@@ -49,12 +49,11 @@ The purpose of this command line tool is to provide a human-interface for your b
 - [ ] Modularise and refactor the config code.
 - [ ] Modularise and refactor the requests code into `TellerClientService`.
 - [ ] Modularise the inquirer'esque code.
-- [ ] Ensure that custom errors have sensible content. See: https://doc.rust-lang.org/beta/std/fmt/
 - [ ] If there is no config ask a question and save a config containing the answer. Set `is_first_time`.
 - [ ] Logic to print the list of accounts to help with naming them.
 - [ ] If `is_first_time` then fetch the list of accounts and ask questions to alias each of these as their `last_4_digits`.
-- [ ] Implement `teller show current --balance`.
-- [ ] If `show <account_alias>` is not an alias check to see if it is a real account.
+- [ ] Implement `teller show balance current`.
+- [ ] If `show balance <account_alias>` is not an alias check to see if it is a real account; also consider defaults.
 - [ ] Write `README.md`.
 - [ ] Write unit tests.
 - [ ] Add shields.
