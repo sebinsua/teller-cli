@@ -3,6 +3,9 @@ extern crate docopt;
 
 extern crate hyper;
 
+// TODO: Turns out you've been polluting the namespace really really badly
+//       and you're gonna need to fix that!
+
 use docopt::Docopt;
 use rustc_serialize::{Decodable, Decoder};
 
@@ -98,12 +101,6 @@ struct Account {
     balance: String,
     account_number_last_4: String,
 }
-// TODO: Maybe will need to deserialize with this:
-// http://valve.github.io/blog/2014/08/26/json-serialization-in-rust-part-2/
-
-// TODO: Work out when to use matching
-//       and when to use try! and when to
-//       use something else.
 
 #[derive(Debug)]
 enum ConfigError {
@@ -139,21 +136,23 @@ impl From<rustc_serialize::json::EncoderError> for ConfigError {
 impl std::error::Error for ConfigError {
     fn description(&self) -> &str {
         match *self {
-            ConfigError::IoError(_) => "I/O Error",
-            ConfigError::JsonParseError(_) => "JSON parsing error",
-            ConfigError::JsonStringifyError(_) => "JSON stringify error",
+            ConfigError::IoError(ref err) => err.description(),
+            ConfigError::JsonParseError(ref err) => err.description(),
+            ConfigError::JsonStringifyError(ref err) => err.description(),
         }
     }
 
     fn cause(&self) -> Option<&std::error::Error> {
         match *self {
-            ConfigError::IoError(ref err) => Some(err as &std::error::Error),
-            ConfigError::JsonParseError(ref err) => Some(err as &std::error::Error),
-            ConfigError::JsonStringifyError(ref err) => Some(err as &std::error::Error),
+            ConfigError::IoError(ref err) => err.cause(),
+            ConfigError::JsonParseError(ref err) => err.cause(),
+            ConfigError::JsonStringifyError(ref err) => err.cause(),
         }
     }
 }
 
+// TODO: Technically this should probably be passed into the
+//       functions that require it.
 fn get_config_path() -> PathBuf {
     let fallback_config_path = PathBuf::from("./.tellerrc");
     let append_config_file = |mut p: PathBuf| {
@@ -194,10 +193,9 @@ fn write_config(config: &Config) -> Result<(), ConfigError> {
     Ok(())
 }
 
-// TODO: Turns out you've been polluting the namespace really really badly
-//       and you're gonna need to fix that!
 #[derive(Debug)]
 enum ApiServiceError {
+    AuthenticationError,
     HttpClientError(hyper::error::Error),
     IoError(io::Error),
     JsonParseError(rustc_serialize::json::DecoderError),
@@ -230,17 +228,19 @@ impl From<rustc_serialize::json::DecoderError> for ApiServiceError {
 impl std::error::Error for ApiServiceError {
     fn description(&self) -> &str {
         match *self {
-            ApiServiceError::HttpClientError(_) => "Api Error",
-            ApiServiceError::IoError(_) => "I/O Error",
-            ApiServiceError::JsonParseError(_) => "JSON parsing error",
+            ApiServiceError::AuthenticationError => "Could not authenticate",
+            ApiServiceError::HttpClientError(ref err) => err.description(),
+            ApiServiceError::IoError(ref err) => err.description(),
+            ApiServiceError::JsonParseError(ref err) => err.description(),
         }
     }
 
     fn cause(&self) -> Option<&std::error::Error> {
         match *self {
-            ApiServiceError::HttpClientError(ref err) => Some(err as &std::error::Error),
-            ApiServiceError::IoError(ref err) => Some(err as &std::error::Error),
-            ApiServiceError::JsonParseError(ref err) => Some(err as &std::error::Error),
+            ApiServiceError::HttpClientError(ref err) => err.cause(),
+            ApiServiceError::IoError(ref err) => err.cause(),
+            ApiServiceError::JsonParseError(ref err) => err.cause(),
+            _ => None,
         }
     }
 }
@@ -256,16 +256,14 @@ fn get_accounts() -> ApiServiceResult<AccountsResponse> {
         }
     );
 
-    let mut res = try!(client.get("https://api.teller.io/accounts")
-                             .header(auth_header)
-                             .send()
-                             .and_then(|r| {
-                                 if r.status.is_client_error() {
-                                     Err(hyper::error::Error::Status)
-                                 } else {
-                                     Ok(r)
-                                 }
-                             }));
+    let mut res = try!(
+        client.get("https://api.teller.io/accounts")
+              .header(auth_header)
+              .send()
+    );
+    if res.status.is_client_error() {
+        return Err(ApiServiceError::AuthenticationError);
+    }
 
     let mut body = String::new();
     try!(res.read_to_string(&mut body));
@@ -286,16 +284,14 @@ fn get_account() -> ApiServiceResult<AccountResponse> {
         }
     );
 
-    let mut res = try!(client.get("https://api.teller.io/accounts/4803f712-cc3e-4560-9f80-3be8116d7723")
-                             .header(auth_header)
-                             .send()
-                             .and_then(|r| {
-                                if r.status.is_client_error() {
-                                    Err(hyper::error::Error::Status)
-                                } else {
-                                    Ok(r)
-                                }
-                            }));
+    let mut res = try!(
+        client.get("https://api.teller.io/accounts/4803f712-cc3e-4560-9f80-3be8116d7723")
+              .header(auth_header)
+              .send()
+    );
+    if res.status.is_client_error() {
+        return Err(ApiServiceError::AuthenticationError);
+    }
 
     let mut body = String::new();
     try!(res.read_to_string(&mut body));
@@ -316,7 +312,7 @@ fn main() {
     //       get a 500 server error. (There is no `error` property bizarrely.)
     match get_accounts() {
         Ok(_) => println!("dont print value "),
-        Err(why) => println!("error: {}", std::error::Error::description(&why)),
+        Err(why) => println!("error: {}", why),
     }
 
     // get_account_balance();
@@ -333,7 +329,7 @@ fn main() {
     //       otherwise ask a question and write to it.
     let config = match read_config() {
         Ok(config) => config,
-        Err(why) => panic!("config could not be read"),
+        Err(why) => panic!(why),
     };
     println!("{}", config.auth_token);
 
