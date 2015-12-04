@@ -1,13 +1,14 @@
-extern crate rustc_serialize;
 extern crate docopt;
-
+extern crate rustc_serialize;
 extern crate hyper;
 
 mod config;
 mod client;
+mod inquirer;
 
 use client::{get_accounts};
 use config::{Config, read_config, write_config};
+use inquirer::ask_question;
 
 use docopt::Docopt;
 use rustc_serialize::{Decodable, Decoder};
@@ -84,13 +85,7 @@ fn main() {
     };
     println!("{}", config.auth_token);
 
-    // TODO: Make this into its own module:
-    // println!("What's the auth token?");
-    // let mut input = String::new();
-    // match io::stdin().read_line(&mut input) {
-    //     Ok(_) => println!("{}", input),
-    //     Err(error) => println!("error: {}", error),
-    // };
+    ask_question();
 
     let auth_token = String::new();
     let new_config = Config::new(auth_token);

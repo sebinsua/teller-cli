@@ -1,9 +1,9 @@
 pub mod error;
 
+use rustc_serialize::json;
 use std::env;
 use std::path::PathBuf;
 use std::fs::File;
-use rustc_serialize::json;
 use std::io::Error as StdIoError;
 
 use std::io::prelude::*; // Required for read_to_string use later.

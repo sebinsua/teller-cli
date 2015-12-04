@@ -46,9 +46,6 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 ### TODO
 
-- [x] Modularise the config code.
-- [x] Modularise the requests code into `TellerClientService`.
-- [ ] Modularise the inquirer'esque code.
 - [ ] Refactor the config, client, and inquirer.
 - [ ] If there is no config ask a question and save a config containing the answer. Set `is_first_time`.
 - [ ] Logic to print the list of accounts to help with naming them.
