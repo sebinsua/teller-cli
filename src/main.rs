@@ -5,6 +5,8 @@ extern crate hyper;
 
 // TODO: Turns out you've been polluting the namespace really really badly
 //       and you're gonna need to fix that!
+mod config;
+use config::error::ConfigError;
 
 use docopt::Docopt;
 use rustc_serialize::{Decodable, Decoder};
@@ -100,55 +102,6 @@ struct Account {
     currency: String,
     balance: String,
     account_number_last_4: String,
-}
-
-#[derive(Debug)]
-enum ConfigError {
-    IoError(io::Error),
-    JsonParseError(rustc_serialize::json::DecoderError),
-    JsonStringifyError(rustc_serialize::json::EncoderError),
-}
-
-impl std::fmt::Display for ConfigError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl From<io::Error> for ConfigError {
-    fn from(e: io::Error) -> ConfigError {
-        ConfigError::IoError(e)
-    }
-}
-
-impl From<rustc_serialize::json::DecoderError> for ConfigError {
-    fn from(e: rustc_serialize::json::DecoderError) -> ConfigError {
-        ConfigError::JsonParseError(e)
-    }
-}
-
-impl From<rustc_serialize::json::EncoderError> for ConfigError {
-    fn from(e: rustc_serialize::json::EncoderError) -> ConfigError {
-        ConfigError::JsonStringifyError(e)
-    }
-}
-
-impl std::error::Error for ConfigError {
-    fn description(&self) -> &str {
-        match *self {
-            ConfigError::IoError(ref err) => err.description(),
-            ConfigError::JsonParseError(ref err) => err.description(),
-            ConfigError::JsonStringifyError(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&std::error::Error> {
-        match *self {
-            ConfigError::IoError(ref err) => err.cause(),
-            ConfigError::JsonParseError(ref err) => err.cause(),
-            ConfigError::JsonStringifyError(ref err) => err.cause(),
-        }
-    }
 }
 
 // TODO: Technically this should probably be passed into the
