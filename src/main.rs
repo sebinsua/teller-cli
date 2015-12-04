@@ -114,7 +114,7 @@ enum ConfigError {
 
 impl std::fmt::Display for ConfigError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "fake display")
+        self.description().fmt(f)
     }
 }
 
@@ -205,7 +205,7 @@ enum ApiServiceError {
 
 impl std::fmt::Display for ApiServiceError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "fake display")
+        self.description().fmt(f)
     }
 }
 
