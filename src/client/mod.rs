@@ -1,11 +1,12 @@
 pub mod error;
 
-use self::error::TellerClientError;
 use hyper::Client;
 use hyper::header::{Authorization, Bearer};
 use rustc_serialize::json;
 
 use std::io::prelude::*; // Required for read_to_string use later.
+
+use self::error::TellerClientError;
 
 // TODO: This is only temporary...
 const TOKEN: &'static str = "";
