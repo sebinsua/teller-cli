@@ -5,8 +5,13 @@ extern crate hyper;
 
 // TODO: Turns out you've been polluting the namespace really really badly
 //       and you're gonna need to fix that!
+
 mod config;
+mod client;
+
 use config::error::ConfigError;
+
+use client::{get_accounts};
 
 use docopt::Docopt;
 use rustc_serialize::{Decodable, Decoder};
@@ -18,12 +23,6 @@ use std::io;
 use std::io::prelude::*;
 use std::fs::File;
 use rustc_serialize::json;
-
-use hyper::Client;
-use hyper::header::{Authorization, Bearer};
-
-// TODO: This is only temporary...
-const TOKEN: &'static str = "";
 
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
@@ -84,26 +83,6 @@ impl Config {
     }
 }
 
-#[derive(Debug, RustcDecodable)]
-struct AccountResponse {
-    data: Account,
-}
-
-#[derive(Debug, RustcDecodable)]
-struct AccountsResponse {
-    data: Vec<Account>,
-}
-
-#[derive(Debug, RustcDecodable)]
-struct Account {
-    updated_at: String,
-    institution: String,
-    id: String,
-    currency: String,
-    balance: String,
-    account_number_last_4: String,
-}
-
 // TODO: Technically this should probably be passed into the
 //       functions that require it.
 fn get_config_path() -> PathBuf {
@@ -144,120 +123,6 @@ fn write_config(config: &Config) -> Result<(), ConfigError> {
     try!(config_file.write_all(content_str.as_bytes()));
 
     Ok(())
-}
-
-#[derive(Debug)]
-enum ApiServiceError {
-    AuthenticationError,
-    HttpClientError(hyper::error::Error),
-    IoError(io::Error),
-    JsonParseError(rustc_serialize::json::DecoderError),
-}
-
-impl std::fmt::Display for ApiServiceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.description().fmt(f)
-    }
-}
-
-impl From<hyper::error::Error> for ApiServiceError {
-    fn from(e: hyper::error::Error) -> ApiServiceError {
-        ApiServiceError::HttpClientError(e)
-    }
-}
-
-impl From<io::Error> for ApiServiceError {
-    fn from(e: io::Error) -> ApiServiceError {
-        ApiServiceError::IoError(e)
-    }
-}
-
-impl From<rustc_serialize::json::DecoderError> for ApiServiceError {
-    fn from(e: rustc_serialize::json::DecoderError) -> ApiServiceError {
-        ApiServiceError::JsonParseError(e)
-    }
-}
-
-impl std::error::Error for ApiServiceError {
-    fn description(&self) -> &str {
-        match *self {
-            ApiServiceError::AuthenticationError => "Could not authenticate",
-            ApiServiceError::HttpClientError(ref err) => err.description(),
-            ApiServiceError::IoError(ref err) => err.description(),
-            ApiServiceError::JsonParseError(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&std::error::Error> {
-        match *self {
-            ApiServiceError::HttpClientError(ref err) => err.cause(),
-            ApiServiceError::IoError(ref err) => err.cause(),
-            ApiServiceError::JsonParseError(ref err) => err.cause(),
-            _ => None,
-        }
-    }
-}
-
-type ApiServiceResult<T> = Result<T, ApiServiceError>;
-
-fn get_accounts() -> ApiServiceResult<AccountsResponse> {
-    let client = Client::new();
-
-    let auth_header = Authorization(
-        Bearer {
-            token: TOKEN.to_owned()
-        }
-    );
-
-    let mut res = try!(
-        client.get("https://api.teller.io/accounts")
-              .header(auth_header)
-              .send()
-    );
-    if res.status.is_client_error() {
-        return Err(ApiServiceError::AuthenticationError);
-    }
-
-    let mut body = String::new();
-    try!(res.read_to_string(&mut body));
-
-    println!("Response: {}", body);
-    let accounts_response = try!(json::decode(&body));
-
-    Ok(accounts_response)
-}
-
-#[allow(dead_code)]
-fn get_account() -> ApiServiceResult<AccountResponse> {
-    let client = Client::new();
-
-    let auth_header = Authorization(
-        Bearer {
-            token: TOKEN.to_owned()
-        }
-    );
-
-    let mut res = try!(
-        client.get("https://api.teller.io/accounts/4803f712-cc3e-4560-9f80-3be8116d7723")
-              .header(auth_header)
-              .send()
-    );
-    if res.status.is_client_error() {
-        return Err(ApiServiceError::AuthenticationError);
-    }
-
-    let mut body = String::new();
-    try!(res.read_to_string(&mut body));
-
-    println!("Response: {}", body);
-    let account_response = try!(json::decode(&body));
-
-    Ok(account_response)
-}
-
-#[allow(dead_code)]
-fn get_account_balance() -> ApiServiceResult<String> {
-    get_account().map(|r| r.data.balance)
 }
 
 fn main() {
