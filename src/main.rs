@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_imports, unused_variables)]
+
 extern crate docopt;
 extern crate rustc_serialize;
 extern crate hyper;
@@ -14,15 +16,17 @@ use inquirer::{ask_question};
 use docopt::Docopt;
 use rustc_serialize::{Decodable, Decoder};
 
+use std::io::Write;
+use tabwriter::TabWriter;
+
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "
 Banking for the command line.
 
 Usage:
-    teller list accounts
-    teller show balance <account>
-    teller -h | --help
-    teller -V | --version
+    teller [list] accounts
+    teller [show] balance [<account>]
+    teller [--help | --version]
 
 Commands:
     list accounts   List accounts.
@@ -45,13 +49,20 @@ struct Args {
 }
 
 #[derive(Debug)]
-enum AccountType { Current, Savings, Business, Unknown(String), None }
+enum AccountType {
+    Current,
+    Savings,
+    Business,
+    Unknown(String),
+    None
+}
 
 impl Decodable for AccountType {
     fn decode<D: Decoder>(d: &mut D) -> Result<AccountType, D::Error> {
         let s = try!(d.read_str());
+        let default_acccount_type = AccountType::None;
         Ok(match &*s {
-            "" => AccountType::None,
+            "" => default_acccount_type,
             "current" => AccountType::Current,
             "savings" => AccountType::Savings,
             "business" => AccountType::Business,
@@ -62,9 +73,6 @@ impl Decodable for AccountType {
 
 #[allow(dead_code)]
 fn represent() {
-    use std::io::Write;
-    use tabwriter::TabWriter;
-
     let mut tw = TabWriter::new(Vec::new());
     write!(&mut tw, "
     Bruce Springsteen\tBorn to Run
@@ -84,15 +92,33 @@ fn represent() {
     println!("{}", written);
 }
 
+fn init_config() {
+    println!("initing config file");
+}
+
+fn list_accounts() {
+    println!("calling list accounts")
+}
+
+fn show_balance(account: &AccountType) {
+    println!("calling show balance");
+    match *account {
+        AccountType::Current => (),
+        AccountType::Savings => (),
+        AccountType::Business => (),
+        _ => (),
+    }
+}
+
 fn main() {
-    represent();
+    // represent();
 
     // TODO: Currently this gets data but it will panic! if no JSON comes back, for example if we
     //       get a 500 server error. (There is no `error` property bizarrely.)
-    match get_accounts() {
+    /* match get_accounts() {
         Ok(_) => println!("dont print value "),
         Err(why) => println!("error: {}", why),
-    }
+    } */
 
     // get_account_balance();
 
@@ -102,10 +128,17 @@ fn main() {
                                  .decode()
                             })
                             .unwrap_or_else(|e| e.exit());
-    println!("{:?}", args);
 
-    // TODO: If there is a config file then read it,
-    //       otherwise ask a question and write to it.
+    let is_first_time = false;
+
+    println!("{:?}", args);
+    match args {
+        Args { cmd_accounts, .. } if cmd_accounts == true => list_accounts(),
+        Args { cmd_balance, ref arg_account, .. } if cmd_balance == true => show_balance(&arg_account),
+        Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
+        _ => println!("{}", USAGE),
+    }
+    /*
     let config = match read_config() {
         Ok(config) => config,
         Err(why) => panic!(why),
@@ -120,6 +153,5 @@ fn main() {
     println!("fake token: {}", new_config.auth_token);
 
     let _ = write_config(&new_config);
-
-    ()
+    */
 }
