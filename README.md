@@ -17,8 +17,8 @@ The purpose of this command line tool is to provide a human-interface for your b
       - [ ] `represent_list_accounts`.
       - [ ] `represent_show_balance`.
 - [x] Set `is_first_time` to `false` by default.
-- [ ] Set `is_first_time` dependent on whether the config file exists or not.
-- [ ] If `is_first_time` is `true` then: `init_config` and pass the `config` to the picked command, else: pass the `config` to the picked command.
+- [x] Set `Optional(config_file)` dependent on whether the config file exists or not.
+- [x] If `Optional(config_file)` is `None` then: `init_config` and pass the `config` to the picked command, else: pass the `config` to the picked command.
 - [ ] `init_config` should `list_accounts` and `ask_questions` (to store the `links.self` of each in the config aliases, before passing the config onwards).
 - [ ] Refactor the config.
 - [ ] Refactor the client.

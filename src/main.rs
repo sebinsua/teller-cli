@@ -10,11 +10,13 @@ mod client;
 mod inquirer;
 
 use client::{get_accounts};
-use config::{Config, read_config, write_config};
+use config::{Config, get_config_path, get_config_file, read_config, write_config};
 use inquirer::{ask_question};
 
 use docopt::Docopt;
 use rustc_serialize::{Decodable, Decoder};
+
+use std::io::ErrorKind;
 
 use std::io::Write;
 use tabwriter::TabWriter;
@@ -83,24 +85,49 @@ fn represent() {
     tw.flush().unwrap();
 
     let written = String::from_utf8(tw.unwrap()).unwrap();
-    assert_eq!(&*written, "
-    Bruce Springsteen  Born to Run
-    Bob Seger          Night Moves
-    Metallica          Black
-    The Boss           Darkness on the Edge of Town
-    ");
     println!("{}", written);
+}
+
+fn ready_config() -> Config {
+    let config_file_path = get_config_path();
+    match get_config_file(config_file_path) {
+        None => {
+            // let _ = write_config(&new_config);
+            init_config();
+            Config::new(String::new())
+        },
+        Some(mut config_file) => {
+            read_config(&mut config_file).unwrap()
+        },
+    }
 }
 
 fn init_config() {
     println!("initing config file");
+    // list_accounts
+    // ask_question();
 }
 
-fn list_accounts() {
-    println!("calling list accounts")
+fn pick_command(arguments: Args, config: &Config) {
+    println!("{:?}", arguments);
+    match arguments {
+        Args { cmd_accounts, .. } if cmd_accounts == true => list_accounts(config),
+        Args { cmd_balance, ref arg_account, .. } if cmd_balance == true => show_balance(config, &arg_account),
+        Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
+        _ => println!("{}", USAGE),
+    }
 }
 
-fn show_balance(account: &AccountType) {
+fn list_accounts(config: &Config) {
+    println!("calling list accounts");
+    /* match get_accounts() {
+        Ok(_) => println!("dont print value "),
+        Err(why) => println!("error: {}", why),
+    } */
+    ()
+}
+
+fn show_balance(config: &Config, account: &AccountType) {
     println!("calling show balance");
     match *account {
         AccountType::Current => (),
@@ -108,50 +135,22 @@ fn show_balance(account: &AccountType) {
         AccountType::Business => (),
         _ => (),
     }
+    // get_account_balance();
+    // represent();
 }
 
 fn main() {
-    // represent();
+    let arguments: Args = Docopt::new(USAGE)
+        .and_then(|d| {
+            d.version(VERSION.map(|v| v.to_string()))
+             .decode()
+        })
+        .unwrap_or_else(|e| e.exit());
 
-    // TODO: Currently this gets data but it will panic! if no JSON comes back, for example if we
-    //       get a 500 server error. (There is no `error` property bizarrely.)
-    /* match get_accounts() {
-        Ok(_) => println!("dont print value "),
-        Err(why) => println!("error: {}", why),
-    } */
-
-    // get_account_balance();
-
-    let args: Args = Docopt::new(USAGE)
-                            .and_then(|d| {
-                                d.version(VERSION.map(|v| v.to_string()))
-                                 .decode()
-                            })
-                            .unwrap_or_else(|e| e.exit());
-
-    let is_first_time = false;
-
-    println!("{:?}", args);
-    match args {
-        Args { cmd_accounts, .. } if cmd_accounts == true => list_accounts(),
-        Args { cmd_balance, ref arg_account, .. } if cmd_balance == true => show_balance(&arg_account),
-        Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
-        _ => println!("{}", USAGE),
-    }
-    /*
-    let config = match read_config() {
-        Ok(config) => config,
-        Err(why) => panic!(why),
-    };
+    let config = ready_config();
     println!("{}", config.auth_token);
 
-    ask_question();
+    pick_command(arguments, &config);
 
-    let auth_token = String::new();
-    let new_config = Config::new(auth_token);
-
-    println!("fake token: {}", new_config.auth_token);
-
-    let _ = write_config(&new_config);
-    */
+    ()
 }
