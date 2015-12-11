@@ -34,7 +34,7 @@ pub fn get_config_path() -> PathBuf {
 }
 
 pub fn get_config_file(config_path: PathBuf) -> Option<File> {
-    println!("Checking whether config file within {} exists", config_path.to_str().unwrap());
+    info!("Checking whether config file within {} exists", config_path.to_str().unwrap());
     let config_file = File::open(&config_path);
     match config_file {
         Err(ref e) if ErrorKind::NotFound == e.kind() => {

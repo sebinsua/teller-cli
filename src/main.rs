@@ -1,5 +1,9 @@
 #![allow(dead_code, unused_imports, unused_variables)]
 
+#[macro_use]
+extern crate log;
+extern crate env_logger;
+
 extern crate docopt;
 extern crate rustc_serialize;
 extern crate hyper;
@@ -109,7 +113,6 @@ fn init_config() {
 }
 
 fn pick_command(arguments: Args, config: &Config) {
-    println!("{:?}", arguments);
     match arguments {
         Args { cmd_accounts, .. } if cmd_accounts == true => list_accounts(config),
         Args { cmd_balance, ref arg_account, .. } if cmd_balance == true => show_balance(config, &arg_account),
@@ -140,6 +143,8 @@ fn show_balance(config: &Config, account: &AccountType) {
 }
 
 fn main() {
+    env_logger::init().unwrap();
+
     let arguments: Args = Docopt::new(USAGE)
         .and_then(|d| {
             d.version(VERSION.map(|v| v.to_string()))
@@ -148,7 +153,6 @@ fn main() {
         .unwrap_or_else(|e| e.exit());
 
     let config = ready_config();
-    println!("{}", config.auth_token);
 
     pick_command(arguments, &config);
 
