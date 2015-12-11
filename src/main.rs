@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{get_accounts};
+use client::{Account, get_accounts, get_account_balance};
 use config::{Config, get_config_path, get_config_file, read_config, write_config};
 use inquirer::{ask_question};
 
@@ -77,28 +77,18 @@ impl Decodable for AccountType {
     }
 }
 
-#[allow(dead_code)]
-fn represent() {
-    let mut tw = TabWriter::new(Vec::new());
-    write!(&mut tw, "
-    Bruce Springsteen\tBorn to Run
-    Bob Seger\tNight Moves
-    Metallica\tBlack
-    The Boss\tDarkness on the Edge of Town
-    ").unwrap();
-    tw.flush().unwrap();
-
-    let written = String::from_utf8(tw.unwrap()).unwrap();
-    println!("{}", written);
-}
-
 fn ready_config() -> Config {
     let config_file_path = get_config_path();
     match get_config_file(config_file_path) {
         None => {
             // let _ = write_config(&new_config);
             init_config();
-            Config::new(String::new())
+            Config::new(
+                "written-auth".to_string(),
+                "current".to_string(),
+                "savings".to_string(),
+                "business".to_string(),
+            )
         },
         Some(mut config_file) => {
             read_config(&mut config_file).unwrap()
@@ -122,24 +112,44 @@ fn pick_command(arguments: Args, config: &Config) {
 }
 
 fn list_accounts(config: &Config) {
-    println!("calling list accounts");
-    /* match get_accounts() {
-        Ok(_) => println!("dont print value "),
-        Err(why) => println!("error: {}", why),
-    } */
+    let represent_list_accounts = |accounts: Vec<Account>| {
+        let mut accounts_table = String::new();
+        for (i, account) in accounts.iter().enumerate() {
+            accounts_table = accounts_table + &format!("{}\t{}\t{} {}\n", (i + 1), account.account_number_last_4, account.balance, account.currency)[..];
+        }
+
+        let mut tw = TabWriter::new(Vec::new());
+        write!(&mut tw, "{}", accounts_table).unwrap();
+        tw.flush().unwrap();
+
+        String::from_utf8(tw.unwrap()).unwrap()
+    };
+
+    let accounts = match get_accounts(&config) {
+        Ok(accounts) => represent_list_accounts(accounts),
+        Err(e) => panic!("Unable to list accounts: {}", e),
+    };
+    println!("{}", accounts);
+
     ()
 }
 
 fn show_balance(config: &Config, account: &AccountType) {
-    println!("calling show balance");
-    match *account {
-        AccountType::Current => (),
-        AccountType::Savings => (),
-        AccountType::Business => (),
-        _ => (),
-    }
-    // get_account_balance();
-    // represent();
+    let default_account_id = config.current.to_owned();
+    let account_id = match *account {
+        AccountType::Current => config.current.to_owned(),
+        AccountType::Savings => config.savings.to_owned(),
+        AccountType::Business => config.business.to_owned(),
+        _ => default_account_id,
+    };
+
+    let balance = match get_account_balance(&config, account_id.to_string()) {
+        Ok(balance) => balance,
+        Err(e) => panic!("Unable to get account balance: {}", e),
+    };
+    println!("{}", balance);
+
+    ()
 }
 
 fn main() {

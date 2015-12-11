@@ -14,12 +14,18 @@ use self::error::ConfigError;
 #[derive(RustcEncodable, RustcDecodable)]
 pub struct Config {
     pub auth_token: String,
+    pub current: String,
+    pub savings: String,
+    pub business: String,
 }
 
 impl Config {
-    pub fn new(auth_token: String) -> Config {
+    pub fn new(auth_token: String, current: String, savings: String, business: String) -> Config {
         Config {
             auth_token: auth_token,
+            current: current,
+            savings: savings,
+            business: business,
         }
     }
 }

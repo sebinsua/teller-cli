@@ -5,11 +5,6 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 ### TODO
 
-- [ ] For each of the picked commands:
-      - [ ] list accounts: call client code with `list_accounts`.
-      - [ ] show balance: call client code with `show_balance`.
-      - [ ] `represent_list_accounts`.
-      - [ ] `represent_show_balance`.
 - [ ] `init_config` should `list_accounts` and `ask_questions` (to store the `links.self` of each in the config aliases, before passing the config onwards).
 - [ ] Refactor the config.
 - [ ] Refactor the client.
