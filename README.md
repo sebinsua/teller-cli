@@ -23,6 +23,7 @@ The purpose of this command line tool is to provide a human-interface for your b
 - [ ] Refactor the config.
 - [ ] Refactor the client.
 - [ ] Refactor the inquirer.
+- [ ] Carefully [remove the `unwrap` statements](https://github.com/Manishearth/rust-clippy/issues/24).
 - [ ] Write unit tests.
 - [ ] Write `README.md`.
 
