@@ -5,12 +5,13 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 ### TODO
 
+- [ ] Look at inquirer and use it to create a question/answer vector structure.
 - [ ] `init_config` should `list_accounts` and `ask_questions` (to store the `links.self` of each in the config aliases, before passing the config onwards).
+- [ ] Carefully [remove the `unwrap` statements](https://github.com/Manishearth/rust-clippy/issues/24).
+- [ ] Write unit tests.
 - [ ] Refactor the config.
 - [ ] Refactor the client.
 - [ ] Refactor the inquirer.
-- [ ] Carefully [remove the `unwrap` statements](https://github.com/Manishearth/rust-clippy/issues/24).
-- [ ] Write unit tests.
 - [ ] Write `README.md`.
 
 ## FAQ
