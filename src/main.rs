@@ -26,8 +26,7 @@ use std::io::Write;
 use tabwriter::TabWriter;
 
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
-const USAGE: &'static str = "
-Banking for the command line.
+const USAGE: &'static str = "Banking for the command line.
 
 Usage:
     teller [list] accounts
@@ -87,7 +86,7 @@ fn ready_config() -> Option<Config> {
                 Some(config) => {
                     match get_config_file_to_write(&config_file_path) {
                         Ok(mut config_file) => {
-                            write_config(&mut config_file, &config);
+                            let _ = write_config(&mut config_file, &config);
                             Some(config)
                         },
                         Err(e) => panic!("ERROR: opening file to write: {}", e),
@@ -96,8 +95,10 @@ fn ready_config() -> Option<Config> {
             }
         },
         Some(mut config_file) => {
-            let config = read_config(&mut config_file).unwrap();
-            Some(config)
+            match read_config(&mut config_file) {
+                Ok(config) => Some(config),
+                Err(e) => panic!("ERROR: attempting to read file {}: {}", config_file_path.display(), e),
+            }
         },
     }
 }
@@ -113,12 +114,7 @@ fn init_config() -> Option<Config> {
 
     let auth_token_answer = ask_question(&get_auth_token_question);
 
-    let mut config = Config::new(
-        auth_token_answer.value,
-        "".to_string(),
-        "".to_string(),
-        "".to_string(),
-    );
+    let mut config = Config::new_with_auth_token_only(auth_token_answer.value);
 
     print!("\n");
     let accounts = match get_accounts(&config) {
@@ -127,7 +123,8 @@ fn init_config() -> Option<Config> {
     };
     represent_list_accounts(&accounts);
 
-    println!("Please type the id (e.g. 3) of the account you wish to place against an alias and press <enter> to set this in the config. Leave empty if irrelevant.");
+    println!("Please type the row (e.g. 3) of the account you wish to place against an alias and
+              press <enter> to set this in the config. Leave empty if irrelevant.");
     print!("\n");
 
     let questions = vec![
@@ -146,32 +143,33 @@ fn init_config() -> Option<Config> {
     ];
 
     let answers: Vec<Answer> = questions.iter().map(ask_question).collect();
-    let filtered_answers: Vec<&Answer> = answers.iter().filter(|&answer| !answer.value.is_empty()).collect();
-    let mut fa_iter = filtered_answers.iter();
+    let non_empty_answers: Vec<&Answer> = answers.iter().filter(|&answer| !answer.value.is_empty()).collect();
+    let mut fa_iter = non_empty_answers.iter();
 
     match fa_iter.find(|&answer| answer.name == "current") {
         None => (),
         Some(answer) => {
-            let number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
-            config.current = accounts[(number - 1) as usize].id.to_owned()
+            let row_number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
+            config.current = accounts[(row_number - 1) as usize].id.to_owned()
         },
     };
     match fa_iter.find(|&answer| answer.name == "savings") {
         None => (),
         Some(answer) => {
-            let number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
-            config.savings = accounts[(number - 1) as usize].id.to_owned()
+            let row_number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
+            config.savings = accounts[(row_number - 1) as usize].id.to_owned()
         }
     };
     match fa_iter.find(|&answer| answer.name == "business") {
         None => (),
         Some(answer) => {
-            let number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
-            config.business = accounts[(number - 1) as usize].id.to_owned()
+            let row_number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
+            config.business = accounts[(row_number - 1) as usize].id.to_owned()
         }
     };
 
     if config.auth_token.is_empty() {
+        error!("`auth_token` was invalid so a config could not be created");
         None
     } else {
         Some(config)
@@ -182,13 +180,13 @@ fn pick_command(arguments: Args) {
     match arguments {
         Args { cmd_accounts, .. } if cmd_accounts == true => {
             match ready_config() {
-                None => info!("Configuration could not be found or created"),
+                None => println!("Configuration could not be found or created so command not executed"),
                 Some(config) => list_accounts(&config),
             }
         },
         Args { cmd_balance, ref arg_account, .. } if cmd_balance == true => {
             match ready_config() {
-                None => info!("Configuration could not be found or created"),
+                None => println!("Configuration could not be found or created so command not executed"),
                 Some(config) => show_balance(&config, &arg_account),
             }
         },
@@ -199,9 +197,10 @@ fn pick_command(arguments: Args) {
 
 fn represent_list_accounts(accounts: &Vec<Account>) {
     let mut accounts_table = String::new();
-    accounts_table.push_str("id\taccount no.\tbalance\n");
-    for (i, account) in accounts.iter().enumerate() {
-        accounts_table = accounts_table + &format!("{}\t****{}\t{}\t{}\n", (i + 1), account.account_number_last_4, account.balance, account.currency)[..];
+    accounts_table.push_str("row\taccount no.\tbalance\n");
+    for (idx, account) in accounts.iter().enumerate() {
+        let row_number = (idx + 1) as u32;
+        accounts_table = accounts_table + &format!("{}\t****{}\t{}\t{}\n", row_number, account.account_number_last_4, account.balance, account.currency)[..];
     }
 
     let mut tw = TabWriter::new(Vec::new());
@@ -249,7 +248,5 @@ fn main() {
         })
         .unwrap_or_else(|e| e.exit());
 
-    pick_command(arguments);
-
-    ()
+    pick_command(arguments)
 }

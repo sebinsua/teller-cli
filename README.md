@@ -3,21 +3,26 @@
 
 The purpose of this command line tool is to provide a human-interface for your bank and not merely to be a one-to-one match with the underlying API.
 
+## Usage
+
+`teller --help` will give you:
+
+![Instructions](./examples/screen.png)
+
 ### TODO
 
-- [ ] Carefully [remove the `unwrap` statements](https://github.com/Manishearth/rust-clippy/issues/24) and clean up deep matches.
-- [ ] Add some `error!`s for errors, instead of always panicking.
-- [ ] Write unit tests.
-- [ ] Refactor the config.
-- [ ] Refactor the client.
-- [ ] Refactor the inquirer.
-- [ ] Write `README.md`.
+- [-] Write `README.md`.
+- [x] Add some `error!`s for errors, instead of always panicking.
+- [ ] Further work:
+      - [ ] Write unit tests.
+      - [ ] Refactor the config, client, inquirer.
+      - [ ] Carefully [remove the `unwrap` statements](https://github.com/Manishearth/rust-clippy/issues/24) and clean up deep matches.
 
 ## FAQ
 
 #### Compiling gives `openssl/hmac.h` not found error
 
-Ensure that both Homebrew and `openssl` are installed, and then [try running `brew link --force openssl`](https://github.com/sfackler/rust-openssl/issues/255).
+Ensure that both [Homebrew](https://github.com/Homebrew/homebrew) and `openssl` are installed, and then [try running `brew link --force openssl`](https://github.com/sfackler/rust-openssl/issues/255).
 
 This relates to the following error:
 

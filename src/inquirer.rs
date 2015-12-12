@@ -36,10 +36,11 @@ impl Answer {
 
 
 pub fn ask_question(question: &Question) -> Answer {
+    let question_name = question.name.to_owned();
     println!("{}", question.message);
     let mut input = String::new();
     match stdin().read_line(&mut input) {
-        Ok(_) => Answer::new(question.name.to_owned(), input.trim().to_string()),
-        Err(error) => panic!("ERROR: {}", error),
+        Ok(_) => Answer::new(question_name, input.trim().to_string()),
+        Err(error) => panic!("Unable to read line for {}: {}", question_name, error),
     }
 }

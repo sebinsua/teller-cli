@@ -28,6 +28,15 @@ impl Config {
             business: business,
         }
     }
+
+    pub fn new_with_auth_token_only(auth_token: String) -> Config {
+        Config::new(
+            auth_token,
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        )
+    }
 }
 
 pub fn get_config_path() -> PathBuf {
@@ -55,7 +64,7 @@ pub fn get_config_file(config_path: &PathBuf) -> Option<File> {
 pub fn get_config_file_to_write(config_path: &PathBuf) -> Result<File, StdIoError> {
     let config_file = File::create(&config_path);
     match config_file {
-        Err(ref e) if ErrorKind::PermissionDenied == e.kind() => panic!("Permission to read config denied!"),
+        Err(ref e) if ErrorKind::PermissionDenied == e.kind() => panic!("Permission to read config denied"),
         _ => config_file,
     }
 }
@@ -63,6 +72,8 @@ pub fn get_config_file_to_write(config_path: &PathBuf) -> Result<File, StdIoErro
 pub fn read_config(config_file: &mut File) -> Result<Config, ConfigError> {
     let mut content_str = String::new();
     try!(config_file.read_to_string(&mut content_str));
+
+    debug!("config read as: {}", content_str);
 
     let config: Config = try!(json::decode(&content_str));
 

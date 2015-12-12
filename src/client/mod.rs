@@ -32,18 +32,20 @@ pub struct Account {
     pub account_number_last_4: String,
 }
 
+fn get_auth_header(auth_token: &String) -> Authorization<Bearer> {
+    Authorization(
+        Bearer {
+            token: auth_token.to_owned()
+        }
+    )
+}
+
 pub fn get_accounts(config: &Config) -> ApiServiceResult<Vec<Account>> {
     let client = Client::new();
 
-    let auth_header = Authorization(
-        Bearer {
-            token: config.auth_token.to_owned()
-        }
-    );
-
     let mut res = try!(
         client.get("https://api.teller.io/accounts")
-              .header(auth_header)
+              .header(get_auth_header(&config.auth_token))
               .send()
     );
     if res.status.is_client_error() {
@@ -52,6 +54,8 @@ pub fn get_accounts(config: &Config) -> ApiServiceResult<Vec<Account>> {
 
     let mut body = String::new();
     try!(res.read_to_string(&mut body));
+
+    debug!("GET /accounts response: {}", body);
 
     let accounts_response: AccountsResponse = try!(json::decode(&body));
 
@@ -61,15 +65,9 @@ pub fn get_accounts(config: &Config) -> ApiServiceResult<Vec<Account>> {
 pub fn get_account(config: &Config, account_id: String) -> ApiServiceResult<Account> {
     let client = Client::new();
 
-    let auth_header = Authorization(
-        Bearer {
-            token: config.auth_token.to_owned()
-        }
-    );
-
     let mut res = try!(
         client.get(&format!("https://api.teller.io/accounts/{}", account_id))
-              .header(auth_header)
+              .header(get_auth_header(&config.auth_token))
               .send()
     );
     if res.status.is_client_error() {
@@ -79,11 +77,14 @@ pub fn get_account(config: &Config, account_id: String) -> ApiServiceResult<Acco
     let mut body = String::new();
     try!(res.read_to_string(&mut body));
 
+    debug!("GET /account/:id response: {}", body);
+
     let account_response: AccountResponse = try!(json::decode(&body));
 
     Ok(account_response.data)
 }
 
 pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<String> {
-    get_account(&config, account_id).map(|a| a.balance + " " + &a.currency)
+    let represent_balance = |a: Account| a.balance + " " + &a.currency;
+    get_account(&config, account_id).map(represent_balance)
 }
