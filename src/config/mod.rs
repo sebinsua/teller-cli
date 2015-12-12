@@ -11,7 +11,7 @@ use std::io::prelude::*; // Required for read_to_string use later.
 
 use self::error::ConfigError;
 
-#[derive(RustcEncodable, RustcDecodable)]
+#[derive(Debug, RustcEncodable, RustcDecodable)]
 pub struct Config {
     pub auth_token: String,
     pub current: String,
@@ -39,12 +39,12 @@ pub fn get_config_path() -> PathBuf {
     env::home_dir().map_or(fallback_config_path, append_config_file)
 }
 
-pub fn get_config_file(config_path: PathBuf) -> Option<File> {
+pub fn get_config_file(config_path: &PathBuf) -> Option<File> {
     info!("Checking whether config file within {} exists", config_path.to_str().unwrap());
     let config_file = File::open(&config_path);
     match config_file {
         Err(ref e) if ErrorKind::NotFound == e.kind() => {
-            println!("no config file found");
+            debug!("no config file found");
             None
         },
         Err(_) => panic!("Unable to read config!"),
@@ -52,7 +52,7 @@ pub fn get_config_file(config_path: PathBuf) -> Option<File> {
     }
 }
 
-pub fn get_config_file_to_write(config_path: PathBuf) -> Result<File, StdIoError> {
+pub fn get_config_file_to_write(config_path: &PathBuf) -> Result<File, StdIoError> {
     let config_file = File::create(&config_path);
     match config_file {
         Err(ref e) if ErrorKind::PermissionDenied == e.kind() => panic!("Permission to read config denied!"),
