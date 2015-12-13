@@ -5,18 +5,13 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 ## Usage
 
-`teller --help` will give you:
+`teller show balance current` will show you your current account's balance.
 
-![Instructions](./examples/screen.png)
+`teller --help` for more commands.
 
-### TODO
+*e.g.*
 
-- [-] Write `README.md`.
-- [x] Add some `error!`s for errors, instead of always panicking.
-- [ ] Further work:
-      - [ ] Write unit tests.
-      - [ ] Refactor the config, client, inquirer.
-      - [ ] Carefully [remove the `unwrap` statements](https://github.com/Manishearth/rust-clippy/issues/24) and clean up deep matches.
+![Instructions](http://i.imgur.com/OjIdDBY.png)
 
 ## FAQ
 

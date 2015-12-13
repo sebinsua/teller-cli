@@ -121,7 +121,7 @@ fn init_config() -> Option<Config> {
         Ok(accounts) => accounts,
         Err(e) => panic!("Unable to list accounts: {}", e),
     };
-    represent_list_accounts(&accounts);
+    represent_list_accounts(&accounts, &config);
 
     println!("Please type the row (e.g. 3) of the account you wish to place against an alias and
               press <enter> to set this in the config. Leave empty if irrelevant.");
@@ -195,12 +195,26 @@ fn pick_command(arguments: Args) {
     }
 }
 
-fn represent_list_accounts(accounts: &Vec<Account>) {
+fn get_account_alias_for_id(account_id: &String, config: &Config) -> String {
+    if *account_id == config.current {
+        "(current)".to_string()
+    } else if *account_id == config.savings {
+        "(savings)".to_string()
+    } else if *account_id == config.business {
+        "(business)".to_string()
+    } else {
+        "".to_string()
+    }
+}
+
+fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
     let mut accounts_table = String::new();
     accounts_table.push_str("row\taccount no.\tbalance\n");
     for (idx, account) in accounts.iter().enumerate() {
         let row_number = (idx + 1) as u32;
-        accounts_table = accounts_table + &format!("{}\t****{}\t{}\t{}\n", row_number, account.account_number_last_4, account.balance, account.currency)[..];
+        let account_alias = get_account_alias_for_id(&account.id, &config);
+        let new_account_row = format!("{} {}\t****{}\t{}\t{}\n", row_number, account_alias, account.account_number_last_4, account.balance, account.currency);
+        accounts_table = accounts_table + &new_account_row;
     }
 
     let mut tw = TabWriter::new(Vec::new());
@@ -214,7 +228,7 @@ fn represent_list_accounts(accounts: &Vec<Account>) {
 
 fn list_accounts(config: &Config) {
     match get_accounts(&config) {
-        Ok(accounts) => represent_list_accounts(&accounts),
+        Ok(accounts) => represent_list_accounts(&accounts, &config),
         Err(e) => panic!("Unable to list accounts: {}", e),
     }
 }
