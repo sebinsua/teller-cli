@@ -55,12 +55,6 @@ fi
 209  2015-07-16  NANNA'S             -0.10 GBP     2520 15JUL15 C , NANNA'S , LONDON GB
 ```
 
-###### Which amounts to?
-
-`{ teller list transactions current --only-numbers | pcregrep -o1 "NANNA'S\s+([-+]?[0-9]*\.?[0-9]+)" | sed '$ !s/$/+/' | tr -d '\n'; echo } | bc`
-
-Easy! Alright. Let's scrap that.
-
 #### Am I saving money with a :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
 
 ```
