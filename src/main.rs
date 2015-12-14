@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, get_accounts, get_account_balance};
+use client::{Account, Transaction, get_accounts, get_account_balance, get_transactions};
 use config::{Config, get_config_path, get_config_file, read_config, get_config_file_to_write, write_config};
 use inquirer::{Question, Answer, ask_question};
 
@@ -31,24 +31,29 @@ const USAGE: &'static str = "Banking for the command line.
 Usage:
     teller [list] accounts
     teller [show] balance [<account>] [--only-numbers]
+    teller [list] transactions [<account>] [--only-numbers] [--timeframe=<tf>]
     teller [--help | --version]
 
 Commands:
-    list accounts   List accounts.
-    show balance    Show the balance of an account. Default account is 'current'.
+    list accounts       List accounts.
+    list transactions   List transactions (default: current).
+    show balance        Show the balance of an account (default: current).
 
 Options:
-    -h --help       Show this screen.
-    -V --version    Show version.
-    --only-numbers  Show only numbers, without currency codes, etc.
+    -h --help           Show this screen.
+    -V --version        Show version.
+    --only-numbers      Show only numbers, without currency codes, etc.
+    --period=<prd>      Group by a period of time [default: monthly].
+    --timeframe=<tf>    Operate upon a named period of time [default: year].
 ";
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
     cmd_list: bool,
-    cmd_accounts: bool,
     cmd_show: bool,
+    cmd_accounts: bool,
     cmd_balance: bool,
+    cmd_transactions: bool,
     arg_account: AccountType,
     flag_only_numbers: bool,
     flag_help: bool,
@@ -192,6 +197,12 @@ fn pick_command(arguments: Args) {
                 Some(config) => show_balance(&config, &arg_account, &flag_only_numbers),
             }
         },
+        Args { cmd_transactions, ref arg_account, flag_only_numbers, .. } if cmd_transactions == true => {
+            match ready_config() {
+                None => println!("Configuration could not be found or created so command not executed"),
+                Some(config) => list_transactions(&config, &arg_account, &flag_only_numbers),
+            }
+        },
         Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
         _ => println!("{}", USAGE),
     }
@@ -223,9 +234,9 @@ fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
     write!(&mut tw, "{}", accounts_table).unwrap();
     tw.flush().unwrap();
 
-    let accounts = String::from_utf8(tw.unwrap()).unwrap();
+    let accounts_str = String::from_utf8(tw.unwrap()).unwrap();
 
-    println!("{}", accounts)
+    println!("{}", accounts_str)
 }
 
 fn list_accounts(config: &Config) {
@@ -235,26 +246,62 @@ fn list_accounts(config: &Config) {
     }
 }
 
-fn represent_show_balance(balance_with_currency: (String, String), only_numbers: &bool) {
+fn get_balance_for_display(balance_with_currency: (String, String), only_numbers: &bool) -> String {
     if *only_numbers {
-        println!("{}", balance_with_currency.0);
+        balance_with_currency.0
     } else {
-        println!("{}", balance_with_currency.0 + " " + &balance_with_currency.1);
+        balance_with_currency.0 + " " + &balance_with_currency.1
     }
 }
 
-fn show_balance(config: &Config, account: &AccountType, only_numbers: &bool) {
+fn represent_show_balance(balance_with_currency: (String, String), only_numbers: &bool) {
+    println!("{}", get_balance_for_display(balance_with_currency, &only_numbers))
+}
+
+fn get_account_id(config: &Config, account: &AccountType) -> String {
     let default_account_id = config.current.to_owned();
-    let account_id = match *account {
+    match *account {
         AccountType::Current => config.current.to_owned(),
         AccountType::Savings => config.savings.to_owned(),
         AccountType::Business => config.business.to_owned(),
         _ => default_account_id,
-    };
+    }
+}
 
+fn show_balance(config: &Config, account: &AccountType, only_numbers: &bool) {
+    let account_id = get_account_id(&config, &account);
     match get_account_balance(&config, account_id.to_string()) {
         Ok(balance) => represent_show_balance(balance, &only_numbers),
         Err(e) => panic!("Unable to get account balance: {}", e),
+    }
+}
+
+fn represent_list_transactions(transactions: &Vec<Transaction>, only_numbers: &bool) {
+    let currency = "GBP".to_string(); // TODO: This shouldn't be hardcoded. Comes from account
+
+    let mut transactions_table = String::new();
+    transactions_table.push_str("row\tdate\tcounterparty\tamount\tdescription\n");
+    for (idx, transaction) in transactions.iter().enumerate() {
+        let row_number = (idx + 1) as u32;
+        let balance = get_balance_for_display((transaction.amount.to_owned(), currency.to_owned()), &only_numbers);
+        let new_transaction_row = format!("{}\t{}\t{}\t{}\t{}\n", row_number, transaction.date, transaction.counterparty, balance, transaction.description);
+        transactions_table = transactions_table + &new_transaction_row;
+    }
+
+    let mut tw = TabWriter::new(Vec::new());
+    write!(&mut tw, "{}", transactions_table).unwrap();
+    tw.flush().unwrap();
+
+    let transactions_str = String::from_utf8(tw.unwrap()).unwrap();
+
+    println!("{}", transactions_str)
+}
+
+fn list_transactions(config: &Config, account: &AccountType, only_numbers: &bool) {
+    let account_id = get_account_id(&config, &account);
+    match get_transactions(&config, account_id.to_string()) {
+        Ok(transactions) => represent_list_transactions(&transactions, &only_numbers),
+        Err(e) => panic!("Unable to list transactions: {}", e),
     }
 }
 

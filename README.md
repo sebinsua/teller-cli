@@ -3,6 +3,8 @@
 
 The purpose of this command line tool is to provide a human-interface for your bank and not merely to be a one-to-one match with the underlying API.
 
+It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there.
+
 **:point_up_2: Heads up!** The interface is in flux while I try to make it human-like without becoming too redundant.
 
 ## Usage
@@ -39,7 +41,27 @@ fi
 
 ![Alerts](http://i.imgur.com/OXU5uyv.png)
 
-#### Charts :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
+#### :coffee: How much money do I spend at [Nanna's](http://www.nannasn1.com/)?
+
+```
+> teller list transactions current | grep "NANNA'S"
+27   2015-11-12  NANNA'S             -2.70 GBP     4836 11NOV15 C , NANNA'S , LONDON GB
+60   2015-10-28  NANNA'S             -2.40 GBP     4836 27OCT15 C , NANNA'S , LONDON GB
+68   2015-10-26  NANNA'S             -5.40 GBP     4836 25OCT15 C , NANNA'S , LONDON GB
+101  2015-10-09  NANNA'S             -2.70 GBP     4836 08OCT15 C , NANNA'S , LONDON GB
+203  2015-07-17  NANNA'S             -4.60 GBP     2520 16JUL15 C , NANNA'S , LONDON GB
+206  2015-07-16  NANNA'S             -9.90 GBP     2520 15JUL15 C , NANNA'S , LONDON GB
+208  2015-07-16  NANNA'S             -9.30 GBP     2520 14JUL15 C , NANNA'S , LONDON GB
+209  2015-07-16  NANNA'S             -0.10 GBP     2520 15JUL15 C , NANNA'S , LONDON GB
+```
+
+###### Which amounts to?
+
+`{ teller list transactions current --only-numbers | pcregrep -o1 "NANNA'S\s+([-+]?[0-9]*\.?[0-9]+)" | sed '$ !s/$/+/' | tr -d '\n'; echo } | bc`
+
+Easy! Alright. Let's scrap that.
+
+#### Am I saving money with a :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
 
 ```
 > teller list balances business --period=monthly --only-numbers | spark

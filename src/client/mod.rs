@@ -23,6 +23,11 @@ struct AccountsResponse {
 }
 
 #[derive(Debug, RustcDecodable)]
+struct TransactionsResponse {
+    data: Vec<Transaction>,
+}
+
+#[derive(Debug, RustcDecodable)]
 pub struct Account {
     pub updated_at: String,
     pub institution: String,
@@ -30,6 +35,14 @@ pub struct Account {
     pub currency: String,
     pub balance: String,
     pub account_number_last_4: String,
+}
+
+#[derive(Debug, RustcDecodable)]
+pub struct Transaction {
+    pub description: String,
+    pub date: String,
+    pub counterparty: String,
+    pub amount: String,
 }
 
 fn get_auth_header(auth_token: &String) -> Authorization<Bearer> {
@@ -87,4 +100,31 @@ pub fn get_account(config: &Config, account_id: String) -> ApiServiceResult<Acco
 pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<(String, String)> {
     let to_balance_tuple = |a: Account| (a.balance, a.currency);
     get_account(&config, account_id).map(to_balance_tuple)
+}
+
+pub fn raw_transactions(config: &Config, account_id: String, count: u32, page: u32) -> ApiServiceResult<Vec<Transaction>> {
+    let client = Client::new();
+
+    let mut res = try!(
+        client.get(&format!("https://api.teller.io/accounts/{}/transactions", account_id))
+              .header(get_auth_header(&config.auth_token))
+              .send()
+    );
+    if res.status.is_client_error() {
+        return Err(TellerClientError::AuthenticationError);
+    }
+
+    let mut body = String::new();
+    try!(res.read_to_string(&mut body));
+
+    debug!("GET /account/:id/transactions response: {}", body);
+
+    let transactions_response: TransactionsResponse = try!(json::decode(&body));
+
+    Ok(transactions_response.data)
+}
+
+pub fn get_transactions(config: &Config, account_id: String) -> ApiServiceResult<Vec<Transaction>> {
+    // get the last data items date
+    raw_transactions(config, account_id, 250, 1)
 }
