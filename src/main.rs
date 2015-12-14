@@ -30,16 +30,17 @@ const USAGE: &'static str = "Banking for the command line.
 
 Usage:
     teller [list] accounts
-    teller [show] balance [<account>]
+    teller [show] balance [<account>] [--only-numbers]
     teller [--help | --version]
 
 Commands:
     list accounts   List accounts.
-    show balance    Show the balance of an account.
+    show balance    Show the balance of an account. Default account is 'current'.
 
 Options:
     -h --help       Show this screen.
     -V --version    Show version.
+    --only-numbers  Show only numbers, without currency codes, etc.
 ";
 
 #[derive(Debug, RustcDecodable)]
@@ -49,6 +50,7 @@ struct Args {
     cmd_show: bool,
     cmd_balance: bool,
     arg_account: AccountType,
+    flag_only_numbers: bool,
     flag_help: bool,
     flag_version: bool,
 }
@@ -184,10 +186,10 @@ fn pick_command(arguments: Args) {
                 Some(config) => list_accounts(&config),
             }
         },
-        Args { cmd_balance, ref arg_account, .. } if cmd_balance == true => {
+        Args { cmd_balance, ref arg_account, flag_only_numbers, .. } if cmd_balance == true => {
             match ready_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
-                Some(config) => show_balance(&config, &arg_account),
+                Some(config) => show_balance(&config, &arg_account, &flag_only_numbers),
             }
         },
         Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
@@ -233,11 +235,15 @@ fn list_accounts(config: &Config) {
     }
 }
 
-fn represent_show_balance(balance: String) {
-    println!("{}", balance);
+fn represent_show_balance(balance_with_currency: (String, String), only_numbers: &bool) {
+    if *only_numbers {
+        println!("{}", balance_with_currency.0);
+    } else {
+        println!("{}", balance_with_currency.0 + " " + &balance_with_currency.1);
+    }
 }
 
-fn show_balance(config: &Config, account: &AccountType) {
+fn show_balance(config: &Config, account: &AccountType, only_numbers: &bool) {
     let default_account_id = config.current.to_owned();
     let account_id = match *account {
         AccountType::Current => config.current.to_owned(),
@@ -247,7 +253,7 @@ fn show_balance(config: &Config, account: &AccountType) {
     };
 
     match get_account_balance(&config, account_id.to_string()) {
-        Ok(balance) => represent_show_balance(balance),
+        Ok(balance) => represent_show_balance(balance, &only_numbers),
         Err(e) => panic!("Unable to get account balance: {}", e),
     }
 }

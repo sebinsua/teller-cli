@@ -84,7 +84,7 @@ pub fn get_account(config: &Config, account_id: String) -> ApiServiceResult<Acco
     Ok(account_response.data)
 }
 
-pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<String> {
-    let represent_balance = |a: Account| a.balance + " " + &a.currency;
-    get_account(&config, account_id).map(represent_balance)
+pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<(String, String)> {
+    let to_balance_tuple = |a: Account| (a.balance, a.currency);
+    get_account(&config, account_id).map(to_balance_tuple)
 }
