@@ -35,16 +35,16 @@ Usage:
     teller [--help | --version]
 
 Commands:
-    list accounts       List accounts.
-    list transactions   List transactions (default: current).
-    show balance        Show the balance of an account (default: current).
+    list accounts           List accounts.
+    list transactions       List transactions (default: current).
+    show balance            Show the balance of an account (default: current).
 
 Options:
-    -h --help           Show this screen.
-    -V --version        Show version.
-    --only-numbers      Show only numbers, without currency codes, etc.
-    --period=<prd>      Group by a period of time [default: monthly].
-    --timeframe=<tf>    Operate upon a named period of time [default: year].
+    -h --help               Show this screen.
+    -V --version            Show version.
+    -n --only-numbers       Show numbers without currency codes.
+    -p --interval=<itv>     Group by an interval of time (default: monthly).
+    -tf --timeframe=<tf>    Operate upon a named period of time (default: year).
 ";
 
 #[derive(Debug, RustcDecodable)]
@@ -56,6 +56,8 @@ struct Args {
     cmd_transactions: bool,
     arg_account: AccountType,
     flag_only_numbers: bool,
+    flag_interval: Interval,
+    flag_timeframe: Timeframe,
     flag_help: bool,
     flag_version: bool,
 }
@@ -69,6 +71,18 @@ enum AccountType {
     None
 }
 
+#[derive(Debug)]
+enum Interval {
+    Monthly,
+    None
+}
+
+#[derive(Debug)]
+enum Timeframe {
+    Year,
+    None
+}
+
 impl Decodable for AccountType {
     fn decode<D: Decoder>(d: &mut D) -> Result<AccountType, D::Error> {
         let s = try!(d.read_str());
@@ -79,6 +93,28 @@ impl Decodable for AccountType {
             "savings" => AccountType::Savings,
             "business" => AccountType::Business,
             s => AccountType::Unknown(s.to_string()),
+        })
+    }
+}
+
+impl Decodable for Interval {
+    fn decode<D: Decoder>(d: &mut D) -> Result<Interval, D::Error> {
+        let s = try!(d.read_str());
+        let default_interval = Interval::Monthly;
+        Ok(match &*s {
+            "monthly" => Interval::Monthly,
+            _ => default_interval,
+        })
+    }
+}
+
+impl Decodable for Timeframe {
+    fn decode<D: Decoder>(d: &mut D) -> Result<Timeframe, D::Error> {
+        let s = try!(d.read_str());
+        let default_timeframe = Timeframe::Year;
+        Ok(match &*s {
+            "year" => Timeframe::Year,
+            _ => default_timeframe,
         })
     }
 }
