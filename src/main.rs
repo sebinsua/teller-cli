@@ -14,6 +14,7 @@ mod client;
 mod inquirer;
 
 use client::{Account, Transaction, get_accounts, get_account_balance, get_transactions};
+use std::path::PathBuf;
 use config::{Config, get_config_path, get_config_file, read_config, get_config_file_to_write, write_config};
 use inquirer::{Question, Answer, ask_question};
 
@@ -29,12 +30,14 @@ const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "Banking for the command line.
 
 Usage:
+    teller init
     teller [list] accounts
     teller [show] balance [<account>] [--only-numbers]
     teller [list] transactions [<account>] [--only-numbers] [--timeframe=<tf>]
     teller [--help | --version]
 
 Commands:
+    init                    Configure.
     list accounts           List accounts.
     list transactions       List transactions (default: current).
     show balance            Show the balance of an account (default: current).
@@ -49,6 +52,7 @@ Options:
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
+    cmd_init: bool,
     cmd_list: bool,
     cmd_show: bool,
     cmd_accounts: bool,
@@ -119,23 +123,14 @@ impl Decodable for Timeframe {
     }
 }
 
-fn ready_config() -> Option<Config> {
+fn get_config() -> Option<Config> {
     let config_file_path = get_config_path();
     match get_config_file(&config_file_path) {
         None => {
             println!("A config file could not be found at: {}", config_file_path.display());
-            match init_config() {
-                None => None,
-                Some(config) => {
-                    match get_config_file_to_write(&config_file_path) {
-                        Ok(mut config_file) => {
-                            let _ = write_config(&mut config_file, &config);
-                            Some(config)
-                        },
-                        Err(e) => panic!("ERROR: opening file to write: {}", e),
-                    }
-                },
-            }
+            println!("You will need to set the `auth_token` and give aliases to your bank accounts");
+            print!("\n");
+            configure_cli(&config_file_path)
         },
         Some(mut config_file) => {
             match read_config(&mut config_file) {
@@ -146,10 +141,22 @@ fn ready_config() -> Option<Config> {
     }
 }
 
-fn init_config() -> Option<Config> {
-    println!("You will need to set the `auth_token` and give aliases to your bank accounts");
-    print!("\n");
+fn configure_cli(config_file_path: &PathBuf) -> Option<Config> {
+    match init_config() {
+        None => None,
+        Some(config) => {
+            match get_config_file_to_write(&config_file_path) {
+                Ok(mut config_file) => {
+                    let _ = write_config(&mut config_file, &config);
+                    Some(config)
+                },
+                Err(e) => panic!("ERROR: opening file to write: {}", e),
+            }
+        },
+    }
+}
 
+fn init_config() -> Option<Config> {
     let get_auth_token_question = Question::new(
         "auth_token".to_string(),
         "What is your `auth_token` on teller.io?".to_string()
@@ -166,8 +173,7 @@ fn init_config() -> Option<Config> {
     };
     represent_list_accounts(&accounts, &config);
 
-    println!("Please type the row (e.g. 3) of the account you wish to place against an alias and
-              press <enter> to set this in the config. Leave empty if irrelevant.");
+    println!("Please type the row (e.g. 3) of the account you wish to place against an alias and press <enter> to set this in the config. Leave empty if irrelevant.");
     print!("\n");
 
     let questions = vec![
@@ -221,20 +227,27 @@ fn init_config() -> Option<Config> {
 
 fn pick_command(arguments: Args) {
     match arguments {
+        Args { cmd_init, .. } if cmd_init == true => {
+            let config_file_path = get_config_path();
+            println!("To create the config ({}) we need to find out your `auth_token` and assign aliases to some common bank accounts.", config_file_path.display());
+            print!("\n");
+            configure_cli(&config_file_path);
+            ()
+        },
         Args { cmd_accounts, .. } if cmd_accounts == true => {
-            match ready_config() {
+            match get_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
                 Some(config) => list_accounts(&config),
             }
         },
         Args { cmd_balance, ref arg_account, flag_only_numbers, .. } if cmd_balance == true => {
-            match ready_config() {
+            match get_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
                 Some(config) => show_balance(&config, &arg_account, &flag_only_numbers),
             }
         },
         Args { cmd_transactions, ref arg_account, flag_only_numbers, .. } if cmd_transactions == true => {
-            match ready_config() {
+            match get_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
                 Some(config) => list_transactions(&config, &arg_account, &flag_only_numbers),
             }
