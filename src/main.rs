@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, Transaction, get_accounts, get_account_balance, get_transactions};
+use client::{Account, Transaction, Money, get_accounts, get_account_balance, get_transactions};
 use client::{Interval, Timeframe};
 
 use std::path::PathBuf;
@@ -290,7 +290,7 @@ fn list_accounts(config: &Config) {
     }
 }
 
-fn get_balance_for_display(balance_with_currency: (String, String), only_numbers: &bool) -> String {
+fn get_balance_for_display(balance_with_currency: Money, only_numbers: &bool) -> String {
     if *only_numbers {
         balance_with_currency.0
     } else {
@@ -298,7 +298,7 @@ fn get_balance_for_display(balance_with_currency: (String, String), only_numbers
     }
 }
 
-fn represent_show_balance(balance_with_currency: (String, String), only_numbers: &bool) {
+fn represent_show_balance(balance_with_currency: Money, only_numbers: &bool) {
     println!("{}", get_balance_for_display(balance_with_currency, &only_numbers))
 }
 
