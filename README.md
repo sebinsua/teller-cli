@@ -55,7 +55,9 @@ fi
 209  2015-07-16  NANNA'S             -0.10 GBP     2520 15JUL15 C , NANNA'S , LONDON GB
 ```
 
-#### Am I saving money with a :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
+Hopefully Teller will add support for querying transactions soon.
+
+#### Am I saving money with a chart :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
 
 ```
 > teller list balances business --period=monthly --only-numbers | spark
