@@ -10,7 +10,21 @@ use std::io::prelude::*; // Required for read_to_string use later.
 
 use self::error::TellerClientError;
 
+#[derive(Debug)]
+pub enum Interval {
+    Monthly,
+    None
+}
+
+#[derive(Debug)]
+pub enum Timeframe {
+    Year,
+    None
+}
+
 pub type ApiServiceResult<T> = Result<T, TellerClientError>;
+
+pub type Money = (String, String);
 
 #[derive(Debug, RustcDecodable)]
 struct AccountResponse {
@@ -97,7 +111,7 @@ pub fn get_account(config: &Config, account_id: String) -> ApiServiceResult<Acco
     Ok(account_response.data)
 }
 
-pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<(String, String)> {
+pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<Money> {
     let to_balance_tuple = |a: Account| (a.balance, a.currency);
     get_account(&config, account_id).map(to_balance_tuple)
 }
@@ -124,7 +138,35 @@ pub fn raw_transactions(config: &Config, account_id: String, count: u32, page: u
     Ok(transactions_response.data)
 }
 
-pub fn get_transactions(config: &Config, account_id: String) -> ApiServiceResult<Vec<Transaction>> {
-    // get the last data items date
-    raw_transactions(config, account_id, 250, 1)
+pub fn get_transactions(config: &Config, account_id: String, timeframe: &Timeframe) -> ApiServiceResult<Vec<Transaction>> {
+    // TODO: Create a query string for `raw_transactions`
+
+    // TODO:
+    // install chrono: https://github.com/lifthrasiir/rust-chrono
+    // switch rustc-serialize support on with:
+    // http://doc.crates.io/manifest.html#the-[features]-section
+
+    // TODO: finish listing support
+    // 1. Match Timeframe on year
+    // 2. Create a to (current date) and a from (current date - year)
+    // 2. Get transactions and then
+    // 3. Place datas into a Vec
+    // 4. Get the last datas date
+    // 5. If the date is predicate: past 'from' then check to see if there is a 'links.next' and if so
+    // 6. get transactions with next page
+    // 7. Once predicate no longer true, filter all transactions out that are not in between from and to
+    // 8. finally return the Vec.
+
+    let count = 250;
+    let page = 1;
+    raw_transactions(config, account_id, count, page)
+}
+
+pub fn get_balances(config: &Config, account_id: String, interval: &Interval, timeframe: &Timeframe) /* -> ApiServiceResult<Vec<Money>> */ {
+    // TODO:
+    // 1. call get_account and use it to set the current balance
+    // 2. call get_transactions
+    // 3. and reduce transactions against the current balance adding their amount and storing the
+    //    value against its own month. beginning of each month
+    // 4. append current_balance to the Vec
 }

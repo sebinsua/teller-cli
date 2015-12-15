@@ -14,14 +14,15 @@ mod client;
 mod inquirer;
 
 use client::{Account, Transaction, get_accounts, get_account_balance, get_transactions};
+use client::{Interval, Timeframe};
+
 use std::path::PathBuf;
 use config::{Config, get_config_path, get_config_file, read_config, get_config_file_to_write, write_config};
+
 use inquirer::{Question, Answer, ask_question};
 
 use docopt::Docopt;
 use rustc_serialize::{Decodable, Decoder};
-
-use std::io::ErrorKind;
 
 use std::io::Write;
 use tabwriter::TabWriter;
@@ -34,13 +35,15 @@ Usage:
     teller [list] accounts
     teller [show] balance [<account>] [--only-numbers]
     teller [list] transactions [<account>] [--only-numbers] [--timeframe=<tf>]
+    teller [list] balances [<account>] [--only-numbers] [--interval=<itv>] [--timeframe=<tf>]
     teller [--help | --version]
 
 Commands:
     init                    Configure.
     list accounts           List accounts.
-    list transactions       List transactions (default: current).
     show balance            Show the balance of an account (default: current).
+    list transactions       List transactions (default: current).
+    list balances           List balances (default: current).
 
 Options:
     -h --help               Show this screen.
@@ -58,6 +61,7 @@ struct Args {
     cmd_accounts: bool,
     cmd_balance: bool,
     cmd_transactions: bool,
+    cmd_balances: bool,
     arg_account: AccountType,
     flag_only_numbers: bool,
     flag_interval: Interval,
@@ -72,18 +76,6 @@ enum AccountType {
     Savings,
     Business,
     Unknown(String),
-    None
-}
-
-#[derive(Debug)]
-enum Interval {
-    Monthly,
-    None
-}
-
-#[derive(Debug)]
-enum Timeframe {
-    Year,
     None
 }
 
@@ -246,11 +238,14 @@ fn pick_command(arguments: Args) {
                 Some(config) => show_balance(&config, &arg_account, &flag_only_numbers),
             }
         },
-        Args { cmd_transactions, ref arg_account, flag_only_numbers, .. } if cmd_transactions == true => {
+        Args { cmd_transactions, ref arg_account, flag_only_numbers, ref flag_timeframe, .. } if cmd_transactions == true => {
             match get_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
-                Some(config) => list_transactions(&config, &arg_account, &flag_only_numbers),
+                Some(config) => list_transactions(&config, &arg_account, &flag_only_numbers, &flag_timeframe),
             }
+        },
+        Args { cmd_balances, ref arg_account, flag_only_numbers, ref flag_interval, ref flag_timeframe, .. } if cmd_balances == true => {
+            ()
         },
         Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
         _ => println!("{}", USAGE),
@@ -325,9 +320,7 @@ fn show_balance(config: &Config, account: &AccountType, only_numbers: &bool) {
     }
 }
 
-fn represent_list_transactions(transactions: &Vec<Transaction>, only_numbers: &bool) {
-    let currency = "GBP".to_string(); // TODO: This shouldn't be hardcoded. Comes from account
-
+fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &String, only_numbers: &bool) {
     let mut transactions_table = String::new();
     transactions_table.push_str("row\tdate\tcounterparty\tamount\tdescription\n");
     for (idx, transaction) in transactions.iter().enumerate() {
@@ -346,10 +339,11 @@ fn represent_list_transactions(transactions: &Vec<Transaction>, only_numbers: &b
     println!("{}", transactions_str)
 }
 
-fn list_transactions(config: &Config, account: &AccountType, only_numbers: &bool) {
+fn list_transactions(config: &Config, account: &AccountType, only_numbers: &bool, timeframe: &Timeframe) {
     let account_id = get_account_id(&config, &account);
-    match get_transactions(&config, account_id.to_string()) {
-        Ok(transactions) => represent_list_transactions(&transactions, &only_numbers),
+    let currency = "GBP".to_string(); // TODO: This shouldn't be hardcoded. Comes from account
+    match get_transactions(&config, account_id.to_string(), &timeframe) {
+        Ok(transactions) => represent_list_transactions(&transactions, &currency, &only_numbers),
         Err(e) => panic!("Unable to list transactions: {}", e),
     }
 }
