@@ -6,14 +6,16 @@ extern crate env_logger;
 
 extern crate docopt;
 extern crate rustc_serialize;
+extern crate chrono;
 extern crate hyper;
 extern crate tabwriter;
+extern crate itertools;
 
 mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, Transaction, Money, get_accounts, get_account_balance, get_transactions};
+use client::{Account, Transaction, Money, get_accounts, get_account_balance, get_transactions, get_balances};
 use client::{Interval, Timeframe};
 
 use std::path::PathBuf;
@@ -245,7 +247,10 @@ fn pick_command(arguments: Args) {
             }
         },
         Args { cmd_balances, ref arg_account, flag_only_numbers, ref flag_interval, ref flag_timeframe, .. } if cmd_balances == true => {
-            ()
+            match get_config() {
+                None => println!("Configuration could not be found or created so command not executed"),
+                Some(config) => list_balances(&config, &arg_account, &flag_only_numbers, &flag_interval, &flag_timeframe),
+            }
         },
         Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
         _ => println!("{}", USAGE),
@@ -342,9 +347,22 @@ fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &Strin
 fn list_transactions(config: &Config, account: &AccountType, only_numbers: &bool, timeframe: &Timeframe) {
     let account_id = get_account_id(&config, &account);
     let currency = "GBP".to_string(); // TODO: This shouldn't be hardcoded. Comes from account
-    match get_transactions(&config, account_id.to_string(), &timeframe) {
+    match get_transactions(&config, &account_id, &timeframe) {
         Ok(transactions) => represent_list_transactions(&transactions, &currency, &only_numbers),
         Err(e) => panic!("Unable to list transactions: {}", e),
+    }
+}
+
+fn represent_list_balances(balances: &Vec<Money>, only_numbers: &bool) {
+    let balance_str = balances.into_iter().map(|b| get_balance_for_display(b.to_owned(), &only_numbers)).collect::<Vec<String>>().join(" ");
+    println!("{}", balance_str)
+}
+
+fn list_balances(config: &Config, account: &AccountType, only_numbers: &bool, interval: &Interval, timeframe: &Timeframe) {
+    let account_id = get_account_id(&config, &account);
+    match get_balances(&config, &account_id, &interval, &timeframe) {
+        Ok(balances) => represent_list_balances(&balances, &only_numbers),
+        Err(e) => panic!("Unable to list balances: {}", e),
     }
 }
 
