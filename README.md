@@ -15,7 +15,7 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 
 *e.g.*
 
-![Instructions](http://i.imgur.com/OjIdDBY.png)
+![Instructions](http://i.imgur.com/lIytXnY.png)
 
 ## Why?
 
