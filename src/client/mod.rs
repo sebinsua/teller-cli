@@ -2,15 +2,33 @@ pub mod error;
 
 use config::Config;
 
-use hyper::Client;
+use hyper::{Client, Url};
 use hyper::header::{Authorization, Bearer};
 use rustc_serialize::json;
+use chrono::{Date, DateTime, NaiveDate, UTC, Datelike};
+use chrono::duration::Duration;
+use itertools::Itertools;
 
 use std::io::prelude::*; // Required for read_to_string use later.
+use std::str::FromStr;
 
 use self::error::TellerClientError;
 
+#[derive(Debug)]
+pub enum Interval {
+    Monthly,
+    None
+}
+
+#[derive(Debug)]
+pub enum Timeframe {
+    Year,
+    None
+}
+
 pub type ApiServiceResult<T> = Result<T, TellerClientError>;
+
+pub type Money = (String, String);
 
 #[derive(Debug, RustcDecodable)]
 struct AccountResponse {
@@ -23,6 +41,11 @@ struct AccountsResponse {
 }
 
 #[derive(Debug, RustcDecodable)]
+struct TransactionsResponse {
+    data: Vec<Transaction>,
+}
+
+#[derive(Debug, RustcDecodable)]
 pub struct Account {
     pub updated_at: String,
     pub institution: String,
@@ -30,6 +53,14 @@ pub struct Account {
     pub currency: String,
     pub balance: String,
     pub account_number_last_4: String,
+}
+
+#[derive(Debug, RustcDecodable)]
+pub struct Transaction {
+    pub description: String,
+    pub date: String,
+    pub counterparty: String,
+    pub amount: String,
 }
 
 fn get_auth_header(auth_token: &String) -> Authorization<Bearer> {
@@ -62,7 +93,7 @@ pub fn get_accounts(config: &Config) -> ApiServiceResult<Vec<Account>> {
     Ok(accounts_response.data)
 }
 
-pub fn get_account(config: &Config, account_id: String) -> ApiServiceResult<Account> {
+pub fn get_account(config: &Config, account_id: &str) -> ApiServiceResult<Account> {
     let client = Client::new();
 
     let mut res = try!(
@@ -84,7 +115,111 @@ pub fn get_account(config: &Config, account_id: String) -> ApiServiceResult<Acco
     Ok(account_response.data)
 }
 
-pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<String> {
-    let represent_balance = |a: Account| a.balance + " " + &a.currency;
-    get_account(&config, account_id).map(represent_balance)
+pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<Money> {
+    let to_balance_tuple = |a: Account| (a.balance, a.currency);
+    get_account(&config, &account_id).map(to_balance_tuple)
+}
+
+pub fn raw_transactions(config: &Config, account_id: &str, count: u32, page: u32) -> ApiServiceResult<Vec<Transaction>> {
+    let mut url = Url::parse(&format!("https://api.teller.io/accounts/{}/transactions", account_id)).unwrap();
+
+    const COUNT: &'static str = "count";
+    const PAGE: &'static str = "page";
+    let query = vec![ (COUNT, count.to_string()), (PAGE, page.to_string()) ];
+    url.set_query_from_pairs(query.into_iter());
+
+    let client = Client::new();
+    let mut res = try!(
+        client.get(url)
+              .header(get_auth_header(&config.auth_token))
+              .send()
+    );
+    if res.status.is_client_error() {
+        return Err(TellerClientError::AuthenticationError);
+    }
+
+    let mut body = String::new();
+    try!(res.read_to_string(&mut body));
+
+    debug!("GET /account/:id/transactions response: {}", body);
+
+    let transactions_response: TransactionsResponse = try!(json::decode(&body));
+
+    Ok(transactions_response.data)
+}
+
+fn parse_utc_date_from_transaction(t: &Transaction) -> Date<UTC> {
+    let full_date = &(t.date.to_owned() + "T00:00:00-00:00");
+    let past_transaction_date_without_tz = DateTime::parse_from_rfc3339(full_date).unwrap().date();
+    let past_transaction_date = past_transaction_date_without_tz.with_timezone(&UTC);
+    past_transaction_date
+}
+
+pub fn get_transactions(config: &Config, account_id: &str, timeframe: &Timeframe) -> ApiServiceResult<Vec<Transaction>> {
+    let mut all_transactions = vec![];
+    match *timeframe {
+        Timeframe::None => Ok(all_transactions),
+        Timeframe::Year => {
+            let to = UTC::today();
+            let from = to - Duration::weeks(52); // close enough... 😅
+
+            let mut fetching = true;
+            let mut page = 1;
+            let count = 250;
+            while fetching {
+                let mut transactions = try!(raw_transactions(config, &account_id, count, page));
+                match transactions.last() {
+                    None => (),
+                    Some(past_transaction) => {
+                        let past_transaction_date = parse_utc_date_from_transaction(&past_transaction);
+                        if past_transaction_date < from {
+                            fetching = false;
+                        }
+                    },
+                };
+
+                all_transactions.append(&mut transactions);
+                page = page + 1;
+            }
+
+            let all_transactions = all_transactions.into_iter().filter(|t| {
+                let transaction_date = parse_utc_date_from_transaction(&t);
+                transaction_date > from
+            }).collect();
+
+            Ok(all_transactions)
+        },
+    }
+}
+
+pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe) -> ApiServiceResult<Vec<Money>> {
+    let mut balances: Vec<Money> = vec![];
+    let transactions: Vec<Transaction> = get_transactions(&config, &account_id, &timeframe).unwrap_or(vec![]);
+
+    let month_year_total_transactions: Vec<(String, f32)> = transactions.into_iter().group_by(|t| {
+        let transaction_date = parse_utc_date_from_transaction(&t);
+        let group_name = format!("{}-{}", transaction_date.month(), transaction_date.year());
+        group_name
+    }).map(|myt| {
+        let amount = myt.1.into_iter().map(|t| {
+            f32::from_str(&t.amount).unwrap()
+        }).fold(0f32, |sum, v| sum + v);
+        (myt.0, amount)
+    }).collect();
+
+    let current_balance = try!(match get_account(&config, &account_id) {
+        Ok(ref account) => {
+            Ok((account.balance.to_owned(), account.currency.to_owned()))
+        },
+        Err(e) => Err(e),
+    });
+    balances.push(current_balance.to_owned());
+    let mut last_balance = f32::from_str(&current_balance.0).unwrap();
+    for mytt in month_year_total_transactions {
+        last_balance = last_balance - mytt.1;
+        balances.push((last_balance.to_string(), current_balance.1.to_owned()));
+    }
+
+    balances.reverse();
+    Ok(balances)
 }
