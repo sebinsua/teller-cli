@@ -63,6 +63,21 @@ pub struct Transaction {
     pub amount: String,
 }
 
+#[derive(Debug)]
+pub struct Balances {
+    pub historical_amounts: Vec<(String, String)>,
+    pub currency: String,
+}
+
+impl Balances {
+    pub fn new(historical_amounts: Vec<(String, String)>, currency: String) -> Balances {
+        Balances {
+            historical_amounts: historical_amounts,
+            currency: currency,
+        }
+    }
+}
+
 fn get_auth_header(auth_token: &String) -> Authorization<Bearer> {
     Authorization(
         Bearer {
@@ -212,42 +227,38 @@ pub fn get_transactions(config: &Config, account_id: &str, timeframe: &Timeframe
     }
 }
 
-// TODO: Fix number precision in string
-// TODO: `.format` date appropriately using http://lifthrasiir.github.io/rust-chrono/chrono/format/strftime/index.html
-// TODO: Create `Balances` struct with a better shape (currency, historical_amounts (String, String)).
-// TODO: Use the TabWriter to write this to stdout effectively.
-pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe) -> ApiServiceResult<Vec<Money>> {
-    let mut balances: Vec<Money> = vec![];
+pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe) -> ApiServiceResult<Balances> {
     let transactions: Vec<Transaction> = get_transactions(&config, &account_id, &timeframe).unwrap_or(vec![]);
 
-    let month_year_total_transactions: Vec<(String, f32)> = transactions.into_iter().group_by(|t| {
+    let month_year_total_transactions: Vec<(String, i64)> = transactions.into_iter().group_by(|t| {
         let transaction_date = parse_utc_date_from_transaction(&t);
         match *interval {
             Interval::Monthly => {
-                let group_name = format!("{}-{}", transaction_date.month(), transaction_date.year());
+                let group_name = transaction_date.format("%m-%Y").to_string();
                 group_name
             }
         }
     }).map(|myt| {
+        let group_name = myt.0;
         let amount = myt.1.into_iter().map(|t| {
-            f32::from_str(&t.amount).unwrap()
-        }).fold(0f32, |sum, v| sum + v);
-        (myt.0, amount)
+            let v = (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64;
+            v
+        }).fold(0i64, |sum, v| sum + v);
+        (group_name, amount)
     }).collect();
 
-    let current_balance = try!(match get_account(&config, &account_id) {
-        Ok(ref account) => {
-            Ok((account.balance.to_owned(), account.currency.to_owned()))
-        },
-        Err(e) => Err(e),
-    });
-    balances.push(current_balance.to_owned());
-    let mut last_balance = f32::from_str(&current_balance.0).unwrap();
+    let account = try!(get_account(&config, &account_id));
+    let current_balance = (f64::from_str(&account.balance).unwrap() * 100f64).round() as i64;
+    let currency = account.currency;
+
+    let mut historical_amounts: Vec<(String, String)> = vec![];
+
+    let mut last_balance = current_balance;
     for mytt in month_year_total_transactions {
         last_balance = last_balance - mytt.1;
-        balances.push((last_balance.to_string(), current_balance.1.to_owned()));
+        historical_amounts.push((mytt.0.to_string(), format!("{:.2}", last_balance as f64 / 100f64)));
     }
+    historical_amounts.push(("current".to_string(), format!("{:.2}", current_balance as f64 / 100f64)));
 
-    balances.reverse();
-    Ok(balances)
+    Ok(Balances::new(historical_amounts, currency))
 }

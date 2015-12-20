@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, Transaction, Money, get_accounts, get_account_balance, get_transactions, get_balances};
+use client::{Account, Transaction, Money, Balances, get_accounts, get_account_balance, get_transactions, get_balances};
 use client::{Interval, Timeframe};
 
 use std::path::PathBuf;
@@ -26,6 +26,7 @@ use rustc_serialize::{Decodable, Decoder};
 
 use std::io::Write;
 use tabwriter::TabWriter;
+use std::process::exit;
 
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "Banking for the command line.
@@ -256,25 +257,25 @@ fn pick_command(arguments: Args) {
         },
         Args { cmd_accounts, .. } if cmd_accounts == true => {
             match get_config() {
-                None => println!("Configuration could not be found or created so command not executed"),
+                None => error!("Configuration could not be found or created so command not executed"),
                 Some(config) => list_accounts(&config),
             }
         },
         Args { cmd_balance, ref arg_account, flag_hide_currency, .. } if cmd_balance == true => {
             match get_config() {
-                None => println!("Configuration could not be found or created so command not executed"),
+                None => error!("Configuration could not be found or created so command not executed"),
                 Some(config) => show_balance(&config, &arg_account, &flag_hide_currency),
             }
         },
         Args { cmd_transactions, ref arg_account, flag_show_description, ref flag_timeframe, .. } if cmd_transactions == true => {
             match get_config() {
-                None => println!("Configuration could not be found or created so command not executed"),
+                None => error!("Configuration could not be found or created so command not executed"),
                 Some(config) => list_transactions(&config, &arg_account, &flag_timeframe, &flag_show_description),
             }
         },
         Args { cmd_balances, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_balances == true => {
             match get_config() {
-                None => println!("Configuration could not be found or created so command not executed"),
+                None => error!("Configuration could not be found or created so command not executed"),
                 Some(config) => list_balances(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
             }
         },
@@ -317,7 +318,10 @@ fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
 fn list_accounts(config: &Config) {
     match get_accounts(&config) {
         Ok(accounts) => represent_list_accounts(&accounts, &config),
-        Err(e) => error!("Unable to list accounts: {}", e),
+        Err(e) => {
+            error!("Unable to list accounts: {}", e);
+            exit(1)
+        },
     }
 }
 
@@ -347,7 +351,10 @@ fn show_balance(config: &Config, account: &AccountType, hide_currency: &bool) {
     let account_id = get_account_id(&config, &account);
     match get_account_balance(&config, account_id.to_string()) {
         Ok(balance) => represent_show_balance(balance, &hide_currency),
-        Err(e) => error!("Unable to get account balance: {}", e),
+        Err(e) => {
+            error!("Unable to get account balance: {}", e);
+            exit(1)
+        },
     }
 }
 
@@ -384,21 +391,36 @@ fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timefra
     let currency = "GBP".to_string(); // TODO: This shouldn't be hardcoded. Comes from account
     match get_transactions(&config, &account_id, &timeframe) {
         Ok(transactions) => represent_list_transactions(&transactions, &currency, &show_description),
-        Err(e) => error!("Unable to list transactions: {}", e),
+        Err(e) => {
+            error!("Unable to list transactions: {}", e);
+            exit(1)
+        },
     }
 }
 
-fn represent_list_balances(balances: &Vec<Money>, output: &OutputFormat) {
-    // TODO:
-    //               mon-year  mon-year  mon-year  today
-    // balance (GDP) 23.00     56.00     100.00    34.00
+fn represent_list_balances(balances: &Balances, output: &OutputFormat) {
     match *output {
         OutputFormat::Spark => {
-            let balance_str = balances.into_iter().map(|b| b.0.to_owned()).collect::<Vec<String>>().join(" ");
+            let balance_str = balances.historical_amounts.iter().map(|b| b.1.to_owned()).collect::<Vec<String>>().join(" ");
             println!("{}", balance_str)
         },
         OutputFormat::Standard => {
-            println!("")
+            let mut balances_table = String::new();
+            let month_cols = balances.historical_amounts.iter().map(|historical_amount| historical_amount.0.to_owned()).collect::<Vec<String>>().join("\t");
+            balances_table.push_str(&format!("\t{}\n", month_cols));
+            balances_table.push_str(&format!("balance ({})", balances.currency));
+            for historical_amount in balances.historical_amounts.iter() {
+                let new_balance = format!("\t{}", historical_amount.1);
+                balances_table = balances_table + &new_balance;
+            }
+
+            let mut tw = TabWriter::new(Vec::new());
+            write!(&mut tw, "{}", balances_table).unwrap();
+            tw.flush().unwrap();
+
+            let balances_str = String::from_utf8(tw.unwrap()).unwrap();
+
+            println!("{}", balances_str)
         },
     }
 }
@@ -407,7 +429,10 @@ fn list_balances(config: &Config, account: &AccountType, interval: &Interval, ti
     let account_id = get_account_id(&config, &account);
     match get_balances(&config, &account_id, &interval, &timeframe) {
         Ok(balances) => represent_list_balances(&balances, &output),
-        Err(e) => error!("Unable to list balances: {}", e),
+        Err(e) => {
+            error!("Unable to list balances: {}", e);
+            exit(1)
+        },
     }
 }
 
