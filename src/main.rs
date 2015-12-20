@@ -104,8 +104,12 @@ impl Decodable for Interval {
         let s = try!(d.read_str());
         let default_interval = Interval::Monthly;
         Ok(match &*s {
+            "" => default_interval,
             "monthly" => Interval::Monthly,
-            _ => default_interval,
+            _ => {
+                error!("teller-cli currently only suports an interval of monthly");
+                default_interval
+            },
         })
     }
 }
