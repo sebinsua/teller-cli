@@ -64,6 +64,14 @@ Hopefully Teller will add support for querying transactions soon.
 ▁▁▁▂▃▂▃▄▄▅▆█
 ```
 
+## Installation
+
+First `git clone` and then:
+
+```
+> cargo build --release && cp ./target/release/teller /usr/local/bin && chmod +x /usr/local/bin/teller
+```
+
 ## FAQ
 
 #### Compiling gives `openssl/hmac.h` not found error
