@@ -15,7 +15,7 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 
 *e.g.*
 
-![Instructions](http://i.imgur.com/lIytXnY.png)
+![Instructions](http://i.imgur.com/XJ5Vsfa.png)
 
 ## Why?
 
@@ -69,7 +69,7 @@ Hopefully Teller will add support for querying transactions soon.
 ### From release
 
 ```
-
+TODO: write a command to download cli from Github releases :)
 ```
 
 ### From source
