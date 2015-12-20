@@ -35,9 +35,9 @@ const USAGE: &'static str = "Banking for the command line.
 Usage:
     teller init
     teller [list] accounts
-    teller [show] balance [<account> --only-numbers]
-    teller [list] transactions [<account> --only-numbers --timeframe=<tf>]
-    teller [list] balances [<account> --only-numbers --interval=<itv> --timeframe=<tf>]
+    teller [show] balance [<account> --hide-currency]
+    teller [list] transactions [<account> --hide-currency --timeframe=<tf>]
+    teller [list] balances [<account> --output=<of> --interval=<itv> --timeframe=<tf>]
     teller [--help | --version]
 
 Commands:
@@ -48,11 +48,12 @@ Commands:
     list balances           List balances (default: current).
 
 Options:
-    -h --help               Show this screen.
-    -V --version            Show version.
-    -n --only-numbers       Show numbers without currency codes.
-    -p --interval=<itv>     Group by an interval of time (default: monthly).
+    -h  --help              Show this screen.
+    -V  --version           Show version.
+    -p  --interval=<itv>    Group by an interval of time (default: monthly).
     -tf --timeframe=<tf>    Operate upon a named period of time (default: year).
+    -hc --hide-currency     Show money without currency codes.
+    -o  --output=<of>       Output in a particuar format (e.g. spark).
 ";
 
 #[derive(Debug, RustcDecodable)]
@@ -65,9 +66,10 @@ struct Args {
     cmd_transactions: bool,
     cmd_balances: bool,
     arg_account: AccountType,
-    flag_only_numbers: bool,
     flag_interval: Interval,
     flag_timeframe: Timeframe,
+    flag_hide_currency: bool,
+    flag_output: OutputFormat,
     flag_help: bool,
     flag_version: bool,
 }
@@ -113,6 +115,23 @@ impl Decodable for Timeframe {
         Ok(match &*s {
             "year" => Timeframe::Year,
             _ => default_timeframe,
+        })
+    }
+}
+
+#[derive(Debug)]
+enum OutputFormat {
+    Spark,
+    None
+}
+
+impl Decodable for OutputFormat {
+    fn decode<D: Decoder>(d: &mut D) -> Result<OutputFormat, D::Error> {
+        let s = try!(d.read_str());
+        let default_output_format = OutputFormat::None;
+        Ok(match &*s {
+            "spark" => OutputFormat::Spark,
+            _ => default_output_format,
         })
     }
 }
@@ -234,22 +253,22 @@ fn pick_command(arguments: Args) {
                 Some(config) => list_accounts(&config),
             }
         },
-        Args { cmd_balance, ref arg_account, flag_only_numbers, .. } if cmd_balance == true => {
+        Args { cmd_balance, ref arg_account, flag_hide_currency, .. } if cmd_balance == true => {
             match get_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
-                Some(config) => show_balance(&config, &arg_account, &flag_only_numbers),
+                Some(config) => show_balance(&config, &arg_account, &flag_hide_currency),
             }
         },
-        Args { cmd_transactions, ref arg_account, flag_only_numbers, ref flag_timeframe, .. } if cmd_transactions == true => {
+        Args { cmd_transactions, ref arg_account, flag_hide_currency, ref flag_timeframe, .. } if cmd_transactions == true => {
             match get_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
-                Some(config) => list_transactions(&config, &arg_account, &flag_only_numbers, &flag_timeframe),
+                Some(config) => list_transactions(&config, &arg_account, &flag_timeframe, &flag_hide_currency),
             }
         },
-        Args { cmd_balances, ref arg_account, flag_only_numbers, ref flag_interval, ref flag_timeframe, .. } if cmd_balances == true => {
+        Args { cmd_balances, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_balances == true => {
             match get_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
-                Some(config) => list_balances(&config, &arg_account, &flag_only_numbers, &flag_interval, &flag_timeframe),
+                Some(config) => list_balances(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
             }
         },
         Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
@@ -291,20 +310,20 @@ fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
 fn list_accounts(config: &Config) {
     match get_accounts(&config) {
         Ok(accounts) => represent_list_accounts(&accounts, &config),
-        Err(e) => panic!("Unable to list accounts: {}", e),
+        Err(e) => error!("Unable to list accounts: {}", e),
     }
 }
 
-fn get_balance_for_display(balance_with_currency: Money, only_numbers: &bool) -> String {
-    if *only_numbers {
+fn get_balance_for_display(balance_with_currency: Money, hide_currency: &bool) -> String {
+    if *hide_currency {
         balance_with_currency.0
     } else {
         balance_with_currency.0 + " " + &balance_with_currency.1
     }
 }
 
-fn represent_show_balance(balance_with_currency: Money, only_numbers: &bool) {
-    println!("{}", get_balance_for_display(balance_with_currency, &only_numbers))
+fn represent_show_balance(balance_with_currency: Money, hide_currency: &bool) {
+    println!("{}", get_balance_for_display(balance_with_currency, &hide_currency))
 }
 
 fn get_account_id(config: &Config, account: &AccountType) -> String {
@@ -317,20 +336,20 @@ fn get_account_id(config: &Config, account: &AccountType) -> String {
     }
 }
 
-fn show_balance(config: &Config, account: &AccountType, only_numbers: &bool) {
+fn show_balance(config: &Config, account: &AccountType, hide_currency: &bool) {
     let account_id = get_account_id(&config, &account);
     match get_account_balance(&config, account_id.to_string()) {
-        Ok(balance) => represent_show_balance(balance, &only_numbers),
-        Err(e) => panic!("Unable to get account balance: {}", e),
+        Ok(balance) => represent_show_balance(balance, &hide_currency),
+        Err(e) => error!("Unable to get account balance: {}", e),
     }
 }
 
-fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &String, only_numbers: &bool) {
+fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &String, hide_currency: &bool) {
     let mut transactions_table = String::new();
     transactions_table.push_str("row\tdate\tcounterparty\tamount\tdescription\n");
     for (idx, transaction) in transactions.iter().enumerate() {
         let row_number = (idx + 1) as u32;
-        let balance = get_balance_for_display((transaction.amount.to_owned(), currency.to_owned()), &only_numbers);
+        let balance = get_balance_for_display((transaction.amount.to_owned(), currency.to_owned()), &hide_currency);
         let new_transaction_row = format!("{}\t{}\t{}\t{}\t{}\n", row_number, transaction.date, transaction.counterparty, balance, transaction.description);
         transactions_table = transactions_table + &new_transaction_row;
     }
@@ -344,25 +363,30 @@ fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &Strin
     println!("{}", transactions_str)
 }
 
-fn list_transactions(config: &Config, account: &AccountType, only_numbers: &bool, timeframe: &Timeframe) {
+fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timeframe, hide_currency: &bool) {
     let account_id = get_account_id(&config, &account);
     let currency = "GBP".to_string(); // TODO: This shouldn't be hardcoded. Comes from account
     match get_transactions(&config, &account_id, &timeframe) {
-        Ok(transactions) => represent_list_transactions(&transactions, &currency, &only_numbers),
-        Err(e) => panic!("Unable to list transactions: {}", e),
+        Ok(transactions) => represent_list_transactions(&transactions, &currency, &hide_currency),
+        Err(e) => error!("Unable to list transactions: {}", e),
     }
 }
 
-fn represent_list_balances(balances: &Vec<Money>, only_numbers: &bool) {
-    let balance_str = balances.into_iter().map(|b| get_balance_for_display(b.to_owned(), &only_numbers)).collect::<Vec<String>>().join(" ");
-    println!("{}", balance_str)
+fn represent_list_balances(balances: &Vec<Money>, output: &OutputFormat) {
+    match *output {
+        OutputFormat::Spark => {
+            let balance_str = balances.into_iter().map(|b| b.0.to_owned()).collect::<Vec<String>>().join(" ");
+            println!("{}", balance_str)
+        },
+        OutputFormat::None => println!(""),
+    }
 }
 
-fn list_balances(config: &Config, account: &AccountType, only_numbers: &bool, interval: &Interval, timeframe: &Timeframe) {
+fn list_balances(config: &Config, account: &AccountType, interval: &Interval, timeframe: &Timeframe, output: &OutputFormat) {
     let account_id = get_account_id(&config, &account);
     match get_balances(&config, &account_id, &interval, &timeframe) {
-        Ok(balances) => represent_list_balances(&balances, &only_numbers),
-        Err(e) => panic!("Unable to list balances: {}", e),
+        Ok(balances) => represent_list_balances(&balances, &output),
+        Err(e) => error!("Unable to list balances: {}", e),
     }
 }
 

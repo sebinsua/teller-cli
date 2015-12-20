@@ -30,7 +30,7 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 ```sh
 #!/bin/sh
 
-CURRENT_BALANCE=`teller show balance current --only-numbers`
+CURRENT_BALANCE=`teller show balance current --hide-currency`
 MIN_BALANCE=1000.00
 
 if (( $(bc <<< "$CURRENT_BALANCE < $MIN_BALANCE") ))
@@ -60,11 +60,19 @@ Hopefully Teller will add support for querying transactions soon.
 #### Am I saving money with a chart :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
 
 ```
-> teller list balances business --interval=monthly --only-numbers | spark
+> teller list balances business --interval=monthly --output=spark | spark
 ▁▁▁▂▃▂▃▄▄▅▆█
 ```
 
 ## Installation
+
+### From release
+
+```
+
+```
+
+### From source
 
 First `git clone` and then:
 
