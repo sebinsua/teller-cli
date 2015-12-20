@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_imports, unused_variables)]
-
 #[macro_use]
 extern crate log;
 extern crate env_logger;
@@ -37,7 +35,7 @@ Usage:
     teller [list] accounts
     teller [show] balance [<account> --hide-currency]
     teller [list] transactions [<account> --timeframe=<tf> --show-description]
-    teller [list] balances [<account> --output=<of> --interval=<itv> --timeframe=<tf>]
+    teller [list] balances [<account> --interval=<itv> --timeframe=<tf> --output=<of>]
     teller [--help | --version]
 
 Commands:
@@ -130,15 +128,16 @@ impl Decodable for Timeframe {
 #[derive(Debug)]
 enum OutputFormat {
     Spark,
-    None
+    Standard,
 }
 
 impl Decodable for OutputFormat {
     fn decode<D: Decoder>(d: &mut D) -> Result<OutputFormat, D::Error> {
         let s = try!(d.read_str());
-        let default_output_format = OutputFormat::None;
+        let default_output_format = OutputFormat::Standard;
         Ok(match &*s {
             "spark" => OutputFormat::Spark,
+            "standard" => OutputFormat::Standard,
             _ => default_output_format,
         })
     }
@@ -390,12 +389,17 @@ fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timefra
 }
 
 fn represent_list_balances(balances: &Vec<Money>, output: &OutputFormat) {
+    // TODO:
+    //               mon-year  mon-year  mon-year  today
+    // balance (GDP) 23.00     56.00     100.00    34.00
     match *output {
         OutputFormat::Spark => {
             let balance_str = balances.into_iter().map(|b| b.0.to_owned()).collect::<Vec<String>>().join(" ");
             println!("{}", balance_str)
         },
-        OutputFormat::None => println!(""),
+        OutputFormat::Standard => {
+            println!("")
+        },
     }
 }
 
