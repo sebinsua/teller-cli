@@ -23,6 +23,8 @@ pub enum Interval {
 #[derive(Debug)]
 pub enum Timeframe {
     Year,
+    SixMonths,
+    ThreeMonths,
     None
 }
 
@@ -156,38 +158,55 @@ fn parse_utc_date_from_transaction(t: &Transaction) -> Date<UTC> {
 }
 
 pub fn get_transactions(config: &Config, account_id: &str, timeframe: &Timeframe) -> ApiServiceResult<Vec<Transaction>> {
-    let mut all_transactions = vec![];
+    let page_through_transactions = |from, to| -> ApiServiceResult<Vec<Transaction>> {
+        let mut all_transactions = vec![];
+
+        let mut fetching = true;
+        let mut page = 1;
+        let count = 250;
+        while fetching {
+            let mut transactions = try!(raw_transactions(config, &account_id, count, page));
+            match transactions.last() {
+                None => (),
+                Some(past_transaction) => {
+                    let past_transaction_date = parse_utc_date_from_transaction(&past_transaction);
+                    if past_transaction_date < from {
+                        fetching = false;
+                    }
+                },
+            };
+
+            all_transactions.append(&mut transactions);
+            page = page + 1;
+        }
+
+        all_transactions = all_transactions.into_iter().filter(|t| {
+            let transaction_date = parse_utc_date_from_transaction(&t);
+            transaction_date > from
+        }).collect();
+
+        Ok(all_transactions)
+    };
+
     match *timeframe {
-        Timeframe::None => Ok(all_transactions),
+        Timeframe::None => Ok(vec![]),
+        Timeframe::ThreeMonths => {
+            let to = UTC::today();
+            let from = to - Duration::days(91); // close enough... 😅
+
+            page_through_transactions(from, to)
+        },
+        Timeframe::SixMonths => {
+            let to = UTC::today();
+            let from = to - Duration::days(183);
+
+            page_through_transactions(from, to)
+        },
         Timeframe::Year => {
             let to = UTC::today();
-            let from = to - Duration::weeks(52); // close enough... 😅
+            let from = to - Duration::days(365);
 
-            let mut fetching = true;
-            let mut page = 1;
-            let count = 250;
-            while fetching {
-                let mut transactions = try!(raw_transactions(config, &account_id, count, page));
-                match transactions.last() {
-                    None => (),
-                    Some(past_transaction) => {
-                        let past_transaction_date = parse_utc_date_from_transaction(&past_transaction);
-                        if past_transaction_date < from {
-                            fetching = false;
-                        }
-                    },
-                };
-
-                all_transactions.append(&mut transactions);
-                page = page + 1;
-            }
-
-            let all_transactions = all_transactions.into_iter().filter(|t| {
-                let transaction_date = parse_utc_date_from_transaction(&t);
-                transaction_date > from
-            }).collect();
-
-            Ok(all_transactions)
+            page_through_transactions(from, to)
         },
     }
 }

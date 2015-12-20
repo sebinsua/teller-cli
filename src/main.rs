@@ -36,7 +36,7 @@ Usage:
     teller init
     teller [list] accounts
     teller [show] balance [<account> --hide-currency]
-    teller [list] transactions [<account> --hide-currency --timeframe=<tf>]
+    teller [list] transactions [<account> --timeframe=<tf> --show-description]
     teller [list] balances [<account> --output=<of> --interval=<itv> --timeframe=<tf>]
     teller [--help | --version]
 
@@ -51,7 +51,8 @@ Options:
     -h  --help              Show this screen.
     -V  --version           Show version.
     -p  --interval=<itv>    Group by an interval of time (default: monthly).
-    -tf --timeframe=<tf>    Operate upon a named period of time (default: year).
+    -tf --timeframe=<tf>    Operate upon a named period of time (default: 6-months).
+    -sd --show-description  Show descriptions against transactions.
     -hc --hide-currency     Show money without currency codes.
     -o  --output=<of>       Output in a particuar format (e.g. spark).
 ";
@@ -68,6 +69,7 @@ struct Args {
     arg_account: AccountType,
     flag_interval: Interval,
     flag_timeframe: Timeframe,
+    flag_show_description: bool,
     flag_hide_currency: bool,
     flag_output: OutputFormat,
     flag_help: bool,
@@ -111,9 +113,11 @@ impl Decodable for Interval {
 impl Decodable for Timeframe {
     fn decode<D: Decoder>(d: &mut D) -> Result<Timeframe, D::Error> {
         let s = try!(d.read_str());
-        let default_timeframe = Timeframe::Year;
+        let default_timeframe = Timeframe::SixMonths;
         Ok(match &*s {
             "year" => Timeframe::Year,
+            "6-months" => Timeframe::SixMonths,
+            "3-months" => Timeframe::ThreeMonths,
             _ => default_timeframe,
         })
     }
@@ -259,10 +263,10 @@ fn pick_command(arguments: Args) {
                 Some(config) => show_balance(&config, &arg_account, &flag_hide_currency),
             }
         },
-        Args { cmd_transactions, ref arg_account, flag_hide_currency, ref flag_timeframe, .. } if cmd_transactions == true => {
+        Args { cmd_transactions, ref arg_account, flag_show_description, ref flag_timeframe, .. } if cmd_transactions == true => {
             match get_config() {
                 None => println!("Configuration could not be found or created so command not executed"),
-                Some(config) => list_transactions(&config, &arg_account, &flag_timeframe, &flag_hide_currency),
+                Some(config) => list_transactions(&config, &arg_account, &flag_timeframe, &flag_show_description),
             }
         },
         Args { cmd_balances, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_balances == true => {
@@ -344,14 +348,23 @@ fn show_balance(config: &Config, account: &AccountType, hide_currency: &bool) {
     }
 }
 
-fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &String, hide_currency: &bool) {
+fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &String, show_description: &bool) {
     let mut transactions_table = String::new();
-    transactions_table.push_str("row\tdate\tcounterparty\tamount\tdescription\n");
-    for (idx, transaction) in transactions.iter().enumerate() {
-        let row_number = (idx + 1) as u32;
-        let balance = get_balance_for_display((transaction.amount.to_owned(), currency.to_owned()), &hide_currency);
-        let new_transaction_row = format!("{}\t{}\t{}\t{}\t{}\n", row_number, transaction.date, transaction.counterparty, balance, transaction.description);
-        transactions_table = transactions_table + &new_transaction_row;
+
+    if *show_description {
+        transactions_table.push_str(&format!("row\tdate\tcounterparty\tamount ({})\tdescription\n", currency));
+        for (idx, transaction) in transactions.iter().enumerate() {
+            let row_number = (idx + 1) as u32;
+            let new_transaction_row = format!("{}\t{}\t{}\t{}\t{}\n", row_number, transaction.date, transaction.counterparty, transaction.amount, transaction.description);
+            transactions_table = transactions_table + &new_transaction_row;
+        }
+    } else {
+        transactions_table.push_str(&format!("row\tdate\tcounterparty\tamount ({})\n", currency));
+        for (idx, transaction) in transactions.iter().enumerate() {
+            let row_number = (idx + 1) as u32;
+            let new_transaction_row = format!("{}\t{}\t{}\t{}\n", row_number, transaction.date, transaction.counterparty, transaction.amount);
+            transactions_table = transactions_table + &new_transaction_row;
+        }
     }
 
     let mut tw = TabWriter::new(Vec::new());
@@ -363,11 +376,11 @@ fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &Strin
     println!("{}", transactions_str)
 }
 
-fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timeframe, hide_currency: &bool) {
+fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timeframe, show_description: &bool) {
     let account_id = get_account_id(&config, &account);
     let currency = "GBP".to_string(); // TODO: This shouldn't be hardcoded. Comes from account
     match get_transactions(&config, &account_id, &timeframe) {
-        Ok(transactions) => represent_list_transactions(&transactions, &currency, &hide_currency),
+        Ok(transactions) => represent_list_transactions(&transactions, &currency, &show_description),
         Err(e) => error!("Unable to list transactions: {}", e),
     }
 }
