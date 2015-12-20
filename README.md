@@ -69,7 +69,7 @@ Hopefully Teller will add support for querying transactions soon.
 ### From release
 
 ```
-TODO: write a command to download cli from Github releases :)
+> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.1/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
 ```
 
 ### From source
