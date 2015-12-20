@@ -35,9 +35,9 @@ const USAGE: &'static str = "Banking for the command line.
 Usage:
     teller init
     teller [list] accounts
-    teller [show] balance [<account>] [--only-numbers]
-    teller [list] transactions [<account>] [--only-numbers] [--timeframe=<tf>]
-    teller [list] balances [<account>] [--only-numbers] [--interval=<itv>] [--timeframe=<tf>]
+    teller [show] balance [<account> --only-numbers]
+    teller [list] transactions [<account> --only-numbers --timeframe=<tf>]
+    teller [list] balances [<account> --only-numbers --interval=<itv> --timeframe=<tf>]
     teller [--help | --version]
 
 Commands:
