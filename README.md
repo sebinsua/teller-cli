@@ -5,7 +5,7 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there.
 
-**:point_up_2: Heads up!** The interface is in flux while I try to make it human-like without becoming too redundant.
+**:point_up_2: Heads up!** (1) This is my first [Rust](https://www.rust-lang.org/) project, (2) the interface is in flux while I try to make it human-like without ending up redundant, and (3) I'm [putting off writing tests](https://github.com/sebinsua/teller-cli/issues/1) until I am happy with the interface.
 
 ## Usage
 
@@ -15,7 +15,7 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 
 *e.g.*
 
-![Instructions](http://i.imgur.com/lIytXnY.png)
+![Instructions](http://i.imgur.com/XJ5Vsfa.png)
 
 ## Why?
 
@@ -30,7 +30,7 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 ```sh
 #!/bin/sh
 
-CURRENT_BALANCE=`teller show balance current --only-numbers`
+CURRENT_BALANCE=`teller show balance current --hide-currency`
 MIN_BALANCE=1000.00
 
 if (( $(bc <<< "$CURRENT_BALANCE < $MIN_BALANCE") ))
@@ -45,14 +45,14 @@ fi
 
 ```
 > teller list transactions current | grep "NANNA'S"
-27   2015-11-12  NANNA'S             -2.70 GBP     4836 11NOV15 C , NANNA'S , LONDON GB
-60   2015-10-28  NANNA'S             -2.40 GBP     4836 27OCT15 C , NANNA'S , LONDON GB
-68   2015-10-26  NANNA'S             -5.40 GBP     4836 25OCT15 C , NANNA'S , LONDON GB
-101  2015-10-09  NANNA'S             -2.70 GBP     4836 08OCT15 C , NANNA'S , LONDON GB
-203  2015-07-17  NANNA'S             -4.60 GBP     2520 16JUL15 C , NANNA'S , LONDON GB
-206  2015-07-16  NANNA'S             -9.90 GBP     2520 15JUL15 C , NANNA'S , LONDON GB
-208  2015-07-16  NANNA'S             -9.30 GBP     2520 14JUL15 C , NANNA'S , LONDON GB
-209  2015-07-16  NANNA'S             -0.10 GBP     2520 15JUL15 C , NANNA'S , LONDON GB
+27   2015-11-12  NANNA'S             -2.70
+60   2015-10-28  NANNA'S             -2.40
+68   2015-10-26  NANNA'S             -5.40
+101  2015-10-09  NANNA'S             -2.70
+203  2015-07-17  NANNA'S             -4.60
+206  2015-07-16  NANNA'S             -9.90
+208  2015-07-16  NANNA'S             -9.30
+209  2015-07-16  NANNA'S             -0.10
 ```
 
 Hopefully Teller will add support for querying transactions soon.
@@ -60,8 +60,24 @@ Hopefully Teller will add support for querying transactions soon.
 #### Am I saving money with a chart :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
 
 ```
-> teller list balances business --interval=monthly --only-numbers | spark
+> teller list balances business --interval=monthly --timeframe=year --output=spark | spark
 ▁▁▁▂▃▂▃▄▄▅▆█
+```
+
+## Installation
+
+### From release
+
+```
+TODO: write a command to download cli from Github releases :)
+```
+
+### From source
+
+First `git clone` and then:
+
+```
+> cargo build --release && cp ./target/release/teller /usr/local/bin && chmod +x /usr/local/bin/teller
 ```
 
 ## FAQ
