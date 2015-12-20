@@ -5,7 +5,7 @@ The purpose of this command line tool is to provide a human-interface for your b
 
 It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there.
 
-**:point_up_2: Heads up!** (1) This is my first [Rust](https://www.rust-lang.org/) project, (2) the interface is in flux while I try to make it human-like without ending up redundant, and (3) I'm [putting off writing tests](https://github.com/sebinsua/teller-cli/issues/1) until I am happy with the interface.
+**:point_up_2: Heads up!** (1) This is my first [Rust](https://www.rust-lang.org/) project, (2) the interface is in flux while I try to make it human-like without ending up redundant, and (3) there are [no tests yet](https://github.com/sebinsua/teller-cli/issues/1)!
 
 ## Usage
 
