@@ -5,7 +5,7 @@ use config::Config;
 use hyper::{Client, Url};
 use hyper::header::{Authorization, Bearer};
 use rustc_serialize::json;
-use chrono::{Date, DateTime, UTC, Datelike};
+use chrono::{Date, DateTime, UTC};
 use chrono::duration::Duration;
 use itertools::Itertools;
 
@@ -230,7 +230,7 @@ pub fn get_transactions(config: &Config, account_id: &str, timeframe: &Timeframe
 pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe) -> ApiServiceResult<Balances> {
     let transactions: Vec<Transaction> = get_transactions(&config, &account_id, &timeframe).unwrap_or(vec![]);
 
-    let month_year_total_transactions: Vec<(String, i64)> = transactions.into_iter().group_by(|t| {
+    let mut month_year_total_transactions: Vec<(String, i64)> = transactions.into_iter().group_by(|t| {
         let transaction_date = parse_utc_date_from_transaction(&t);
         match *interval {
             Interval::Monthly => {
@@ -246,19 +246,21 @@ pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, time
         }).fold(0i64, |sum, v| sum + v);
         (group_name, amount)
     }).collect();
+    month_year_total_transactions.reverse();
 
     let account = try!(get_account(&config, &account_id));
     let current_balance = (f64::from_str(&account.balance).unwrap() * 100f64).round() as i64;
     let currency = account.currency;
 
     let mut historical_amounts: Vec<(String, String)> = vec![];
+    historical_amounts.push(("current".to_string(), format!("{:.2}", current_balance as f64 / 100f64)));
 
     let mut last_balance = current_balance;
     for mytt in month_year_total_transactions {
         last_balance = last_balance - mytt.1;
         historical_amounts.push((mytt.0.to_string(), format!("{:.2}", last_balance as f64 / 100f64)));
     }
-    historical_amounts.push(("current".to_string(), format!("{:.2}", current_balance as f64 / 100f64)));
+    historical_amounts.reverse();
 
     Ok(Balances::new(historical_amounts, currency))
 }
