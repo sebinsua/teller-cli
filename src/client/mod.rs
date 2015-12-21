@@ -28,6 +28,9 @@ pub enum Timeframe {
 
 pub type ApiServiceResult<T> = Result<T, TellerClientError>;
 pub type IntervalAmount = (String, String);
+pub type Balances = HistoricalAmountsWithCurrency;
+pub type Outgoings = HistoricalAmountsWithCurrency;
+pub type Incomings = HistoricalAmountsWithCurrency;
 
 #[derive(Debug)]
 pub struct Money {
@@ -89,7 +92,7 @@ pub struct Transaction {
 }
 
 #[derive(Debug)]
-pub struct Balances {
+pub struct HistoricalAmountsWithCurrency {
     pub historical_amounts: Vec<IntervalAmount>,
     pub currency: String,
 }
@@ -252,10 +255,10 @@ pub fn get_transactions(config: &Config, account_id: &str, timeframe: &Timeframe
     }
 }
 
-pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe) -> ApiServiceResult<Balances> {
+fn get_grouped_transaction_aggregates(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe, aggregate_txs: &Fn((String, Vec<Transaction>)) -> (String, i64)) -> ApiServiceResult<Vec<(String, i64)>> {
     let transactions: Vec<Transaction> = get_transactions(&config, &account_id, &timeframe).unwrap_or(vec![]);
 
-    let mut month_year_total_transactions: Vec<(String, i64)> = transactions.into_iter().group_by(|t| {
+    let mut month_year_grouped_transactions: Vec<(String, i64)> = transactions.into_iter().group_by(|t| {
         let transaction_date = parse_utc_date_from_transaction(&t);
         match *interval {
             Interval::Monthly => {
@@ -263,15 +266,24 @@ pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, time
                 group_name
             }
         }
-    }).map(|myt| {
+    }).map(aggregate_txs).collect();
+    month_year_grouped_transactions.reverse();
+
+    Ok(month_year_grouped_transactions)
+}
+
+pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe) -> ApiServiceResult<Balances> {
+    let sum_all = |myt: (String, Vec<Transaction>)| {
+        let to_cent_integer = |t: &Transaction| {
+            (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
+        };
+
         let group_name = myt.0;
-        let amount = myt.1.into_iter().map(|t| {
-            let v = (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64;
-            v
-        }).fold(0i64, |sum, v| sum + v);
+        let amount = myt.1.iter().map(to_cent_integer).fold(0i64, |sum, v| sum + v);
         (group_name, amount)
-    }).collect();
-    month_year_total_transactions.reverse();
+    };
+
+    let month_year_total_transactions = try!(get_grouped_transaction_aggregates(&config, &account_id, &interval, &timeframe, &sum_all));
 
     let account = try!(get_account(&config, &account_id));
     let current_balance = (f64::from_str(&account.balance).unwrap() * 100f64).round() as i64;
@@ -287,5 +299,59 @@ pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, time
     }
     historical_amounts.reverse();
 
-    Ok(Balances::new(historical_amounts, currency))
+    Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
+}
+
+pub fn get_outgoings(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe) -> ApiServiceResult<Outgoings> {
+    let sum_outgoings = |myt: (String, Vec<Transaction>)| {
+        let to_cent_integer = |t: &Transaction| {
+            (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
+        };
+
+        let group_name = myt.0;
+        let amount = myt.1.iter().map(to_cent_integer).filter(|ci| {
+            *ci < 0
+        }).fold(0i64, |sum, v| sum + v);
+        (group_name, amount)
+    };
+
+    let month_year_total_outgoing = try!(get_grouped_transaction_aggregates(&config, &account_id, &interval, &timeframe, &sum_outgoings));
+
+    let account = try!(get_account(&config, &account_id));
+    let currency = account.currency;
+
+    let mut historical_amounts: Vec<IntervalAmount> = vec![];
+    for mytt in month_year_total_outgoing {
+        historical_amounts.push((mytt.0.to_string(), format!("{:.2}", mytt.1 as f64 / 100f64)));
+    }
+    historical_amounts.reverse();
+
+    Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
+}
+
+pub fn get_incomings(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe) -> ApiServiceResult<Incomings> {
+    let sum_incomings = |myt: (String, Vec<Transaction>)| {
+        let to_cent_integer = |t: &Transaction| {
+            (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
+        };
+
+        let group_name = myt.0;
+        let amount = myt.1.iter().map(to_cent_integer).filter(|ci| {
+            *ci > 0
+        }).fold(0i64, |sum, v| sum + v);
+        (group_name, amount)
+    };
+
+    let month_year_total_incoming = try!(get_grouped_transaction_aggregates(&config, &account_id, &interval, &timeframe, &sum_incomings));
+
+    let account = try!(get_account(&config, &account_id));
+    let currency = account.currency;
+
+    let mut historical_amounts: Vec<IntervalAmount> = vec![];
+    for mytt in month_year_total_incoming {
+        historical_amounts.push((mytt.0.to_string(), format!("{:.2}", mytt.1 as f64 / 100f64)));
+    }
+    historical_amounts.reverse();
+
+    Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
 }

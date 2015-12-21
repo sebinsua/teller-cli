@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, Transaction, Money, Balances, get_accounts, get_account_balance, get_transactions, get_balances};
+use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions, get_balances, get_incomings, get_outgoings};
 use client::{Interval, Timeframe};
 
 use std::path::PathBuf;
@@ -36,7 +36,7 @@ Usage:
     teller [list] accounts
     teller [show] balance [<account> --hide-currency]
     teller [list] transactions [<account> --timeframe=<tf> --show-description]
-    teller [list] balances [<account> --interval=<itv> --timeframe=<tf> --output=<of>]
+    teller [list] totals [<account> --amount-type=<at> --interval=<itv> --timeframe=<tf> --output=<of>]
     teller [--help | --version]
 
 Commands:
@@ -44,16 +44,17 @@ Commands:
     list accounts           List accounts.
     show balance            Show the balance of an account (default: current).
     list transactions       List transactions (default: current).
-    list balances           List balances during a timeframe (default: current).
+    list totals             List sums of transactions (all, incoming, outgoing) during a timeframe (default: current).
 
 Options:
-    -h  --help              Show this screen.
-    -V  --version           Show version.
-    -p  --interval=<itv>    Group by an interval of time (default: monthly).
-    -tf --timeframe=<tf>    Operate upon a named period of time (default: 6-months).
-    -sd --show-description  Show descriptions against transactions.
-    -hc --hide-currency     Show money without currency codes.
-    -o  --output=<of>       Output in a particuar format (e.g. spark).
+    -h --help               Show this screen.
+    -V --version            Show version.
+    -i --interval=<itv>     Group by an interval of time (default: monthly).
+    -t --timeframe=<tf>     Operate upon a named period of time (default: 6-months).
+    -d --show-description   Show descriptions against transactions.
+    -c --hide-currency      Show money without currency codes.
+    -a --amount-type=<at>   Select only certain amount types (e.g. all, incoming, outgoing).
+    -o --output=<of>         Output in a particuar format (e.g. spark).
 ";
 
 #[derive(Debug, RustcDecodable)]
@@ -64,12 +65,13 @@ struct Args {
     cmd_accounts: bool,
     cmd_balance: bool,
     cmd_transactions: bool,
-    cmd_balances: bool,
+    cmd_totals: bool,
     arg_account: AccountType,
     flag_interval: Interval,
     flag_timeframe: Timeframe,
     flag_show_description: bool,
     flag_hide_currency: bool,
+    flag_amount_type: AmountType,
     flag_output: OutputFormat,
     flag_help: bool,
     flag_version: bool,
@@ -140,6 +142,26 @@ impl Decodable for OutputFormat {
             "spark" => OutputFormat::Spark,
             "standard" => OutputFormat::Standard,
             _ => default_output_format,
+        })
+    }
+}
+
+#[derive(Debug)]
+enum AmountType {
+    All,
+    Outgoing,
+    Incoming,
+}
+
+impl Decodable for AmountType {
+    fn decode<D: Decoder>(d: &mut D) -> Result<AmountType, D::Error> {
+        let s = try!(d.read_str());
+        let default_amount_type = AmountType::All;
+        Ok(match &*s {
+            "all" => AmountType::All,
+            "outgoing" => AmountType::Outgoing,
+            "incoming" => AmountType::Incoming,
+            _ => default_amount_type,
         })
     }
 }
@@ -257,26 +279,44 @@ fn pick_command(arguments: Args) {
         },
         Args { cmd_accounts, .. } if cmd_accounts == true => {
             match get_config() {
-                None => error!("Configuration could not be found or created so command not executed"),
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                },
                 Some(config) => list_accounts(&config),
             }
         },
         Args { cmd_balance, ref arg_account, flag_hide_currency, .. } if cmd_balance == true => {
             match get_config() {
-                None => error!("Configuration could not be found or created so command not executed"),
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
                 Some(config) => show_balance(&config, &arg_account, &flag_hide_currency),
             }
         },
         Args { cmd_transactions, ref arg_account, flag_show_description, ref flag_timeframe, .. } if cmd_transactions == true => {
             match get_config() {
-                None => error!("Configuration could not be found or created so command not executed"),
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
                 Some(config) => list_transactions(&config, &arg_account, &flag_timeframe, &flag_show_description),
             }
         },
-        Args { cmd_balances, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_balances == true => {
+        Args { cmd_totals, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_amount_type, ref flag_output, .. } if cmd_totals == true => {
             match get_config() {
-                None => error!("Configuration could not be found or created so command not executed"),
-                Some(config) => list_balances(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => {
+                    match *flag_amount_type {
+                        AmountType::All => list_balances(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
+                        AmountType::Incoming => list_incomings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
+                        AmountType::Outgoing => list_outgoings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
+                    }
+                },
             }
         },
         Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
@@ -390,31 +430,35 @@ fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timefra
     }
 }
 
-fn represent_list_balances(balances: &Balances, output: &OutputFormat) {
+fn represent_list_amounts(amount_type: &str, hac: &HistoricalAmountsWithCurrency, output: &OutputFormat) {
     match *output {
         OutputFormat::Spark => {
-            let balance_str = balances.historical_amounts.iter().map(|b| b.1.to_owned()).collect::<Vec<String>>().join(" ");
+            let balance_str = hac.historical_amounts.iter().map(|b| b.1.to_owned()).collect::<Vec<String>>().join(" ");
             println!("{}", balance_str)
         },
         OutputFormat::Standard => {
-            let mut balances_table = String::new();
-            let month_cols = balances.historical_amounts.iter().map(|historical_amount| historical_amount.0.to_owned()).collect::<Vec<String>>().join("\t");
-            balances_table.push_str(&format!("\t{}\n", month_cols));
-            balances_table.push_str(&format!("balance ({})", balances.currency));
-            for historical_amount in balances.historical_amounts.iter() {
-                let new_balance = format!("\t{}", historical_amount.1);
-                balances_table = balances_table + &new_balance;
+            let mut hac_table = String::new();
+            let month_cols = hac.historical_amounts.iter().map(|historical_amount| historical_amount.0.to_owned()).collect::<Vec<String>>().join("\t");
+            hac_table.push_str(&format!("\t{}\n", month_cols));
+            hac_table.push_str(&format!("{} ({})", amount_type, hac.currency));
+            for historical_amount in hac.historical_amounts.iter() {
+                let new_amount = format!("\t{}", historical_amount.1);
+                hac_table = hac_table + &new_amount;
             }
 
             let mut tw = TabWriter::new(Vec::new());
-            write!(&mut tw, "{}", balances_table).unwrap();
+            write!(&mut tw, "{}", hac_table).unwrap();
             tw.flush().unwrap();
 
-            let balances_str = String::from_utf8(tw.unwrap()).unwrap();
+            let hac_str = String::from_utf8(tw.unwrap()).unwrap();
 
-            println!("{}", balances_str)
+            println!("{}", hac_str)
         },
     }
+}
+
+fn represent_list_balances(hac: &Balances, output: &OutputFormat) {
+    represent_list_amounts("balance", &hac, &output)
 }
 
 fn list_balances(config: &Config, account: &AccountType, interval: &Interval, timeframe: &Timeframe, output: &OutputFormat) {
@@ -423,6 +467,36 @@ fn list_balances(config: &Config, account: &AccountType, interval: &Interval, ti
         Ok(balances) => represent_list_balances(&balances, &output),
         Err(e) => {
             error!("Unable to list balances: {}", e);
+            exit(1)
+        },
+    }
+}
+
+fn represent_list_outgoings(hac: &Outgoings, output: &OutputFormat) {
+    represent_list_amounts("outgoing", &hac, &output)
+}
+
+fn list_outgoings(config: &Config, account: &AccountType, interval: &Interval, timeframe: &Timeframe, output: &OutputFormat) {
+    let account_id = get_account_id(&config, &account);
+    match get_outgoings(&config, &account_id, &interval, &timeframe) {
+        Ok(outgoings) => represent_list_outgoings(&outgoings, &output),
+        Err(e) => {
+            error!("Unable to list ougoings: {}", e);
+            exit(1)
+        },
+    }
+}
+
+fn represent_list_incomings(hac: &Incomings, output: &OutputFormat) {
+    represent_list_amounts("incoming", &hac, &output)
+}
+
+fn list_incomings(config: &Config, account: &AccountType, interval: &Interval, timeframe: &Timeframe, output: &OutputFormat) {
+    let account_id = get_account_id(&config, &account);
+    match get_incomings(&config, &account_id, &interval, &timeframe) {
+        Ok(incomings) => represent_list_incomings(&incomings, &output),
+        Err(e) => {
+            error!("Unable to list incomings: {}", e);
             exit(1)
         },
     }
