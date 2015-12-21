@@ -27,8 +27,33 @@ pub enum Timeframe {
 }
 
 pub type ApiServiceResult<T> = Result<T, TellerClientError>;
+pub type IntervalAmount = (String, String);
 
-pub type Money = (String, String);
+#[derive(Debug)]
+pub struct Money {
+    amount: String,
+    currency: String,
+}
+
+impl Money {
+
+    pub fn new<S: Into<String>>(amount: S, currency: S) -> Money {
+        Money {
+            amount: amount.into(),
+            currency: currency.into(),
+        }
+    }
+
+    pub fn get_balance_for_display(&self, hide_currency: &bool) -> String {
+        if *hide_currency {
+            self.amount.to_owned()
+        } else {
+            let balance_with_currency = format!("{} {}", self.amount, self.currency);
+            balance_with_currency.to_owned()
+        }
+    }
+
+}
 
 #[derive(Debug, RustcDecodable)]
 struct AccountResponse {
@@ -65,15 +90,15 @@ pub struct Transaction {
 
 #[derive(Debug)]
 pub struct Balances {
-    pub historical_amounts: Vec<(String, String)>,
+    pub historical_amounts: Vec<IntervalAmount>,
     pub currency: String,
 }
 
 impl Balances {
-    pub fn new(historical_amounts: Vec<(String, String)>, currency: String) -> Balances {
+    pub fn new<S: Into<String>>(historical_amounts: Vec<IntervalAmount>, currency: S) -> Balances {
         Balances {
             historical_amounts: historical_amounts,
-            currency: currency,
+            currency: currency.into(),
         }
     }
 }
@@ -131,8 +156,8 @@ pub fn get_account(config: &Config, account_id: &str) -> ApiServiceResult<Accoun
 }
 
 pub fn get_account_balance(config: &Config, account_id: &str) -> ApiServiceResult<Money> {
-    let to_balance_tuple = |a: Account| (a.balance, a.currency);
-    get_account(&config, &account_id).map(to_balance_tuple)
+    let to_money = |a: Account| Money::new(a.balance, a.currency);
+    get_account(&config, &account_id).map(to_money)
 }
 
 pub fn raw_transactions(config: &Config, account_id: &str, count: u32, page: u32) -> ApiServiceResult<Vec<Transaction>> {
@@ -252,7 +277,7 @@ pub fn get_balances(config: &Config, account_id: &str, interval: &Interval, time
     let current_balance = (f64::from_str(&account.balance).unwrap() * 100f64).round() as i64;
     let currency = account.currency;
 
-    let mut historical_amounts: Vec<(String, String)> = vec![];
+    let mut historical_amounts: Vec<IntervalAmount> = vec![];
     historical_amounts.push(("current".to_string(), format!("{:.2}", current_balance as f64 / 100f64)));
 
     let mut last_balance = current_balance;

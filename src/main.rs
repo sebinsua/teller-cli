@@ -44,7 +44,7 @@ Commands:
     list accounts           List accounts.
     show balance            Show the balance of an account (default: current).
     list transactions       List transactions (default: current).
-    list balances           List balances (default: current).
+    list balances           List balances during a timeframe (default: current).
 
 Options:
     -h  --help              Show this screen.
@@ -325,16 +325,8 @@ fn list_accounts(config: &Config) {
     }
 }
 
-fn get_balance_for_display(balance_with_currency: Money, hide_currency: &bool) -> String {
-    if *hide_currency {
-        balance_with_currency.0
-    } else {
-        balance_with_currency.0 + " " + &balance_with_currency.1
-    }
-}
-
-fn represent_show_balance(balance_with_currency: Money, hide_currency: &bool) {
-    println!("{}", get_balance_for_display(balance_with_currency, &hide_currency))
+fn represent_show_balance(balance_with_currency: &Money, hide_currency: &bool) {
+    println!("{}", balance_with_currency.get_balance_for_display(&hide_currency))
 }
 
 fn get_account_id(config: &Config, account: &AccountType) -> String{
@@ -350,7 +342,7 @@ fn get_account_id(config: &Config, account: &AccountType) -> String{
 fn show_balance(config: &Config, account: &AccountType, hide_currency: &bool) {
     let account_id = get_account_id(&config, &account);
     match get_account_balance(&config, &account_id) {
-        Ok(balance) => represent_show_balance(balance, &hide_currency),
+        Ok(balance) => represent_show_balance(&balance, &hide_currency),
         Err(e) => {
             error!("Unable to get account balance: {}", e);
             exit(1)
