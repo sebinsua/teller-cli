@@ -8,11 +8,11 @@ pub struct Question {
 }
 
 impl Question {
-    pub fn new(name: String, message: String) -> Question {
+    pub fn new<S: Into<String>>(name: S, message: S) -> Question {
         Question {
             _type: "input".to_string(),
-            name: name,
-            message: message,
+            name: name.into(),
+            message: message.into(),
         }
     }
 }
@@ -25,11 +25,11 @@ pub struct Answer {
 }
 
 impl Answer {
-    pub fn new(name: String, value: String) -> Answer {
+    pub fn new<S: Into<String>>(name: S, value: S) -> Answer {
         Answer {
             _type: "input".to_string(),
-            name: name,
-            value: value,
+            name: name.into(),
+            value: value.into(),
         }
     }
 }

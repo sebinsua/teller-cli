@@ -78,10 +78,10 @@ impl Balances {
     }
 }
 
-fn get_auth_header(auth_token: &String) -> Authorization<Bearer> {
+fn get_auth_header(auth_token: &str) -> Authorization<Bearer> {
     Authorization(
         Bearer {
-            token: auth_token.to_owned()
+            token: auth_token.to_string(),
         }
     )
 }
@@ -130,7 +130,7 @@ pub fn get_account(config: &Config, account_id: &str) -> ApiServiceResult<Accoun
     Ok(account_response.data)
 }
 
-pub fn get_account_balance(config: &Config, account_id: String) -> ApiServiceResult<Money> {
+pub fn get_account_balance(config: &Config, account_id: &str) -> ApiServiceResult<Money> {
     let to_balance_tuple = |a: Account| (a.balance, a.currency);
     get_account(&config, &account_id).map(to_balance_tuple)
 }

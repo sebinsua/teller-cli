@@ -179,8 +179,8 @@ fn configure_cli(config_file_path: &PathBuf) -> Option<Config> {
 
 fn init_config() -> Option<Config> {
     let get_auth_token_question = Question::new(
-        "auth_token".to_string(),
-        "What is your `auth_token` on teller.io?".to_string()
+        "auth_token",
+        "What is your `auth_token` on teller.io?",
     );
 
     let auth_token_answer = ask_question(&get_auth_token_question);
@@ -199,16 +199,16 @@ fn init_config() -> Option<Config> {
 
     let questions = vec![
         Question::new(
-            "current".to_string(),
-            "Which is your current account?".to_string()
+            "current",
+            "Which is your current account?",
         ),
         Question::new(
-            "savings".to_string(),
-            "Which is your savings account?".to_string()
+            "savings",
+            "Which is your savings account?",
         ),
         Question::new(
-            "business".to_string(),
-            "Which is your business account?".to_string()
+            "business",
+            "Which is your business account?",
         ),
     ];
 
@@ -337,7 +337,7 @@ fn represent_show_balance(balance_with_currency: Money, hide_currency: &bool) {
     println!("{}", get_balance_for_display(balance_with_currency, &hide_currency))
 }
 
-fn get_account_id(config: &Config, account: &AccountType) -> String {
+fn get_account_id(config: &Config, account: &AccountType) -> String{
     let default_account_id = config.current.to_owned();
     match *account {
         AccountType::Current => config.current.to_owned(),
@@ -349,7 +349,7 @@ fn get_account_id(config: &Config, account: &AccountType) -> String {
 
 fn show_balance(config: &Config, account: &AccountType, hide_currency: &bool) {
     let account_id = get_account_id(&config, &account);
-    match get_account_balance(&config, account_id.to_string()) {
+    match get_account_balance(&config, &account_id) {
         Ok(balance) => represent_show_balance(balance, &hide_currency),
         Err(e) => {
             error!("Unable to get account balance: {}", e);
@@ -358,7 +358,7 @@ fn show_balance(config: &Config, account: &AccountType, hide_currency: &bool) {
     }
 }
 
-fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &String, show_description: &bool) {
+fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &str, show_description: &bool) {
     let mut transactions_table = String::new();
 
     if *show_description {
@@ -388,7 +388,7 @@ fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &Strin
 
 fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timeframe, show_description: &bool) {
     let account_id = get_account_id(&config, &account);
-    let currency = "GBP".to_string(); // TODO: This shouldn't be hardcoded. Comes from account
+    let currency = "GBP"; // TODO: This shouldn't be hardcoded. Comes from account
     match get_transactions(&config, &account_id, &timeframe) {
         Ok(transactions) => represent_list_transactions(&transactions, &currency, &show_description),
         Err(e) => {

@@ -20,18 +20,18 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(auth_token: String, current: String, savings: String, business: String) -> Config {
+    pub fn new<S: Into<String>>(auth_token: S, current: S, savings: S, business: S) -> Config {
         Config {
-            auth_token: auth_token,
-            current: current,
-            savings: savings,
-            business: business,
+            auth_token: auth_token.into(),
+            current: current.into(),
+            savings: savings.into(),
+            business: business.into(),
         }
     }
 
-    pub fn new_with_auth_token_only(auth_token: String) -> Config {
+    pub fn new_with_auth_token_only<S: Into<String>>(auth_token: S) -> Config {
         Config::new(
-            auth_token,
+            auth_token.into(),
             "".to_string(),
             "".to_string(),
             "".to_string(),
