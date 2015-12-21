@@ -54,7 +54,7 @@ Options:
     -d --show-description   Show descriptions against transactions.
     -c --hide-currency      Show money without currency codes.
     -a --amount-type=<at>   Select only certain amount types (e.g. all, incoming, outgoing).
-    -o --output=<of>         Output in a particuar format (e.g. spark).
+    -o --output=<of>        Output in a particular format (e.g. spark).
 ";
 
 #[derive(Debug, RustcDecodable)]
