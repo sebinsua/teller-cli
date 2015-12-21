@@ -284,15 +284,15 @@ fn pick_command(arguments: Args) {
     }
 }
 
-fn get_account_alias_for_id(account_id: &String, config: &Config) -> String {
+fn get_account_alias_for_id<'a>(account_id: &str, config: &Config) -> &'a str {
     if *account_id == config.current {
-        "(current)".to_string()
+        "(current)"
     } else if *account_id == config.savings {
-        "(savings)".to_string()
+        "(savings)"
     } else if *account_id == config.business {
-        "(business)".to_string()
+        "(business)"
     } else {
-        "".to_string()
+        ""
     }
 }
 
