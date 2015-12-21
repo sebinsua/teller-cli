@@ -15,7 +15,7 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 
 *e.g.*
 
-![Instructions](http://i.imgur.com/XJ5Vsfa.png)
+![Instructions](http://i.imgur.com/aILWh5r.png)
 
 ## Why?
 
@@ -60,7 +60,7 @@ Hopefully Teller will add support for querying transactions soon.
 #### Am I saving money with a chart :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
 
 ```
-> teller list balances business --interval=monthly --timeframe=year --output=spark | spark
+> teller list totals business --amount-type=all --interval=monthly --timeframe=year --output=spark | spark
 ▁▁▁▂▃▂▃▄▄▅▆█
 ```
 
@@ -69,7 +69,7 @@ Hopefully Teller will add support for querying transactions soon.
 ### From release
 
 ```
-> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.1/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
+> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.2/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
 ```
 
 ### From source
