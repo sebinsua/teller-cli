@@ -344,9 +344,13 @@ pub fn get_outgoings(config: &Config, account_id: &str, interval: &Interval, tim
     let account = try!(get_account(&config, &account_id));
     let currency = account.currency;
 
+    let from_cent_integer_to_float_string = |amount: i64| {
+        format!("{:.2}", amount as f64 / 100f64)
+    };
+
     let mut historical_amounts: Vec<IntervalAmount> = vec![];
     for mytt in month_year_total_outgoing {
-        historical_amounts.push((mytt.0.to_string(), format!("{:.2}", mytt.1 as f64 / 100f64)));
+        historical_amounts.push((mytt.0.to_string(), from_cent_integer_to_float_string(mytt.1.abs())));
     }
     historical_amounts.reverse();
 
@@ -371,16 +375,19 @@ pub fn get_incomings(config: &Config, account_id: &str, interval: &Interval, tim
     let account = try!(get_account(&config, &account_id));
     let currency = account.currency;
 
+    let from_cent_integer_to_float_string = |amount: i64| {
+        format!("{:.2}", amount as f64 / 100f64)
+    };
+
     let mut historical_amounts: Vec<IntervalAmount> = vec![];
     for mytt in month_year_total_incoming {
-        historical_amounts.push((mytt.0.to_string(), format!("{:.2}", mytt.1 as f64 / 100f64)));
+        historical_amounts.push((mytt.0.to_string(), from_cent_integer_to_float_string(mytt.1)));
     }
     historical_amounts.reverse();
 
     Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
 }
 
-// TODO: Write get_outgoing and get_incoming.
 pub fn get_outgoing(config: &Config, account_id: &str) -> ApiServiceResult<Money> {
     let account = try!(get_account(&config, &account_id));
     let currency = account.currency;
@@ -391,18 +398,18 @@ pub fn get_outgoing(config: &Config, account_id: &str) -> ApiServiceResult<Money
         transaction_date > from
     }).collect();
 
-    let from_float_to_cent_integer = |t: &Transaction| {
+    let from_float_string_to_cent_integer = |t: &Transaction| {
         (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
     };
-    let from_cent_integer_to_float = |amount: i64| {
+    let from_cent_integer_to_float_string = |amount: i64| {
         format!("{:.2}", amount as f64 / 100f64)
     };
 
-    let outgoing = transactions.iter().map(from_float_to_cent_integer).filter(|ci| {
+    let outgoing = transactions.iter().map(from_float_string_to_cent_integer).filter(|ci| {
         *ci < 0
     }).fold(0i64, |sum, v| sum + v);
 
-    Ok(Money::new(from_cent_integer_to_float(outgoing), currency))
+    Ok(Money::new(from_cent_integer_to_float_string(outgoing.abs()), currency))
 }
 
 pub fn get_incoming(config: &Config, account_id: &str) -> ApiServiceResult<Money> {
@@ -415,16 +422,16 @@ pub fn get_incoming(config: &Config, account_id: &str) -> ApiServiceResult<Money
         transaction_date > from
     }).collect();
 
-    let from_float_to_cent_integer = |t: &Transaction| {
+    let from_float_string_to_cent_integer = |t: &Transaction| {
         (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
     };
-    let from_cent_integer_to_float = |amount: i64| {
+    let from_cent_integer_to_float_string = |amount: i64| {
         format!("{:.2}", amount as f64 / 100f64)
     };
 
-    let incoming = transactions.iter().map(from_float_to_cent_integer).filter(|ci| {
+    let incoming = transactions.iter().map(from_float_string_to_cent_integer).filter(|ci| {
         *ci > 0
     }).fold(0i64, |sum, v| sum + v);
 
-    Ok(Money::new(from_cent_integer_to_float(incoming), currency))
+    Ok(Money::new(from_cent_integer_to_float_string(incoming), currency))
 }
