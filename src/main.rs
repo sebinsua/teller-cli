@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions, get_balances, get_incomings, get_outgoings};
+use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions_with_currency, get_balances, get_outgoings, get_incomings, get_outgoing, get_incoming};
 use client::{Interval, Timeframe};
 
 use std::path::PathBuf;
@@ -34,17 +34,25 @@ const USAGE: &'static str = "Banking for the command line.
 Usage:
     teller init
     teller [list] accounts
-    teller [show] balance [<account> --hide-currency]
     teller [list] transactions [<account> --timeframe=<tf> --show-description]
-    teller [list] totals [<account> --amount-type=<at> --interval=<itv> --timeframe=<tf> --output=<of>]
+    teller [list] (balances|outgoings|incomings) [<account> --interval=<itv> --timeframe=<tf> --output=<of>]
+    teller [show] balance [<account> --hide-currency]
+    teller [show] outgoing [<account> --hide-currency]
+    teller [show] incoming [<account> --hide-currency]
     teller [--help | --version]
 
 Commands:
     init                    Configure.
     list accounts           List accounts.
-    show balance            Show the balance of an account (default: current).
-    list transactions       List transactions (default: current).
-    list totals             List sums of transactions (all, incoming, outgoing) during a timeframe (default: current).
+    list transactions       List transactions.
+    list balances           List balances during a timeframe.
+    list outgoings          List outgoings during a timeframe.
+    list incomings          List incomings during a timeframe.
+    show balance            Show the current balance.
+    show outgoing           Show the current outgoing.
+    show incoming           Show the current incoming.
+
+    NOTE: By default commands are applied to the 'current' <account>.
 
 Options:
     -h --help               Show this screen.
@@ -53,7 +61,6 @@ Options:
     -t --timeframe=<tf>     Operate upon a named period of time (default: 6-months).
     -d --show-description   Show descriptions against transactions.
     -c --hide-currency      Show money without currency codes.
-    -a --amount-type=<at>   Select only certain amount types (e.g. all, incoming, outgoing).
     -o --output=<of>        Output in a particular format (e.g. spark).
 ";
 
@@ -63,15 +70,18 @@ struct Args {
     cmd_list: bool,
     cmd_show: bool,
     cmd_accounts: bool,
-    cmd_balance: bool,
     cmd_transactions: bool,
-    cmd_totals: bool,
+    cmd_balances: bool,
+    cmd_outgoings: bool,
+    cmd_incomings: bool,
+    cmd_balance: bool,
+    cmd_outgoing: bool,
+    cmd_incoming: bool,
     arg_account: AccountType,
     flag_interval: Interval,
     flag_timeframe: Timeframe,
     flag_show_description: bool,
     flag_hide_currency: bool,
-    flag_amount_type: AmountType,
     flag_output: OutputFormat,
     flag_help: bool,
     flag_version: bool,
@@ -142,26 +152,6 @@ impl Decodable for OutputFormat {
             "spark" => OutputFormat::Spark,
             "standard" => OutputFormat::Standard,
             _ => default_output_format,
-        })
-    }
-}
-
-#[derive(Debug)]
-enum AmountType {
-    All,
-    Outgoing,
-    Incoming,
-}
-
-impl Decodable for AmountType {
-    fn decode<D: Decoder>(d: &mut D) -> Result<AmountType, D::Error> {
-        let s = try!(d.read_str());
-        let default_amount_type = AmountType::All;
-        Ok(match &*s {
-            "all" => AmountType::All,
-            "outgoing" => AmountType::Outgoing,
-            "incoming" => AmountType::Incoming,
-            _ => default_amount_type,
         })
     }
 }
@@ -295,6 +285,24 @@ fn pick_command(arguments: Args) {
                 Some(config) => show_balance(&config, &arg_account, &flag_hide_currency),
             }
         },
+        Args { cmd_outgoing, ref arg_account, flag_hide_currency, .. } if cmd_outgoing == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => show_outgoing(&config, &arg_account, &flag_hide_currency),
+            }
+        },
+        Args { cmd_incoming, ref arg_account, flag_hide_currency, .. } if cmd_incoming == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => show_incoming(&config, &arg_account, &flag_hide_currency),
+            }
+        },
         Args { cmd_transactions, ref arg_account, flag_show_description, ref flag_timeframe, .. } if cmd_transactions == true => {
             match get_config() {
                 None => {
@@ -304,19 +312,31 @@ fn pick_command(arguments: Args) {
                 Some(config) => list_transactions(&config, &arg_account, &flag_timeframe, &flag_show_description),
             }
         },
-        Args { cmd_totals, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_amount_type, ref flag_output, .. } if cmd_totals == true => {
+        Args { cmd_balances, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_balances == true => {
             match get_config() {
                 None => {
                     error!("Configuration could not be found or created so command not executed");
                     exit(1)
                 }
-                Some(config) => {
-                    match *flag_amount_type {
-                        AmountType::All => list_balances(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
-                        AmountType::Incoming => list_incomings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
-                        AmountType::Outgoing => list_outgoings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
-                    }
-                },
+                Some(config) => list_balances(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
+            }
+        },
+        Args { cmd_incomings, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_incomings == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => list_incomings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
+            }
+        },
+        Args { cmd_outgoings, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_outgoings == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => list_outgoings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
             }
         },
         Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
@@ -365,7 +385,7 @@ fn list_accounts(config: &Config) {
     }
 }
 
-fn represent_show_balance(balance_with_currency: &Money, hide_currency: &bool) {
+fn represent_money(balance_with_currency: &Money, hide_currency: &bool) {
     println!("{}", balance_with_currency.get_balance_for_display(&hide_currency))
 }
 
@@ -382,9 +402,31 @@ fn get_account_id(config: &Config, account: &AccountType) -> String{
 fn show_balance(config: &Config, account: &AccountType, hide_currency: &bool) {
     let account_id = get_account_id(&config, &account);
     match get_account_balance(&config, &account_id) {
-        Ok(balance) => represent_show_balance(&balance, &hide_currency),
+        Ok(balance) => represent_money(&balance, &hide_currency),
         Err(e) => {
             error!("Unable to get account balance: {}", e);
+            exit(1)
+        },
+    }
+}
+
+fn show_outgoing(config: &Config, account: &AccountType, hide_currency: &bool) {
+    let account_id = get_account_id(&config, &account);
+    match get_outgoing(&config, &account_id) {
+        Ok(outgoing) => represent_money(&outgoing, &hide_currency),
+        Err(e) => {
+            error!("Unable to get outgoing: {}", e);
+            exit(1)
+        },
+    }
+}
+
+fn show_incoming(config: &Config, account: &AccountType, hide_currency: &bool) {
+    let account_id = get_account_id(&config, &account);
+    match get_incoming(&config, &account_id) {
+        Ok(incoming) => represent_money(&incoming, &hide_currency),
+        Err(e) => {
+            error!("Unable to get incoming: {}", e);
             exit(1)
         },
     }
@@ -420,9 +462,8 @@ fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &str, 
 
 fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timeframe, show_description: &bool) {
     let account_id = get_account_id(&config, &account);
-    let currency = "GBP"; // TODO: This shouldn't be hardcoded. Comes from account
-    match get_transactions(&config, &account_id, &timeframe) {
-        Ok(transactions) => represent_list_transactions(&transactions, &currency, &show_description),
+    match get_transactions_with_currency(&config, &account_id, &timeframe) {
+        Ok(transactions_with_currency) => represent_list_transactions(&transactions_with_currency.transactions, &transactions_with_currency.currency, &show_description),
         Err(e) => {
             error!("Unable to list transactions: {}", e);
             exit(1)

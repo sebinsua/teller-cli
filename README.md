@@ -15,7 +15,7 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 
 *e.g.*
 
-![Instructions](http://i.imgur.com/aILWh5r.png)
+![Instructions](http://i.imgur.com/cR3IMAN.png)
 
 ## Why?
 
@@ -30,8 +30,8 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 ```sh
 #!/bin/sh
 
-CURRENT_BALANCE=`teller show balance current --hide-currency`
-MIN_BALANCE=1000.00
+CURRENT_BALANCE=`teller show balance current --hide-currency`;
+MIN_BALANCE=1000.00;
 
 if (( $(bc <<< "$CURRENT_BALANCE < $MIN_BALANCE") ))
 then
@@ -60,8 +60,26 @@ Hopefully Teller will add support for querying transactions soon.
 #### Am I saving money with a chart :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
 
 ```
-> teller list totals business --amount-type=all --interval=monthly --timeframe=year --output=spark | spark
+> teller list balances business --interval=monthly --timeframe=year --output=spark | spark
 ▁▁▁▂▃▂▃▄▄▅▆█
+```
+
+#### Have I spent more money this month than I normally do on average?
+
+```sh
+#!/bin/sh
+
+CURRENT_OUTGOING=`teller show outgoing current --hide-currency | sed 's/^-//'`;
+OUTGOINGS=`teller list outgoings current --output=spark`;
+SUM_OUTGOING=`echo "$OUTGOINGS" | sed 's/ /+/g' | bc -l` | sed 's/^-//';
+COUNT_OUTGOING=`echo "$OUTGOINGS" | wc -w | xargs`;
+AVERAGE_OUTGOING=`bc <<< "scale=2; $SUM_OUTGOING / $COUNT_OUTGOING"`;
+
+if (( $(bc <<< "$CURRENT_OUTGOING > $AVERAGE_OUTGOING") ))
+then
+  DIFFERENCE_OUTGOING=`bc <<< "scale=2; $CURRENT_OUTGOING - $AVERAGE_OUTGOING"`;
+  echo "You're spending more money than you normally do! You've spent £$AVERAGE_OUTGOING which is £$DIFFERENCE_OUTGOING more than normal." | terminal-notifier -title "💰 Alert" -subtitle "Current Outgoing is £$CURRENT_OUTGOING";
+fi
 ```
 
 ## Installation
@@ -69,7 +87,7 @@ Hopefully Teller will add support for querying transactions soon.
 ### From release
 
 ```
-> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.2/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
+> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.3/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
 ```
 
 ### From source
