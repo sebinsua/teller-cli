@@ -5,7 +5,7 @@ use config::Config;
 use hyper::{Client, Url};
 use hyper::header::{Authorization, Bearer};
 use rustc_serialize::json;
-use chrono::{Date, DateTime, UTC};
+use chrono::{Date, DateTime, UTC, Datelike};
 use chrono::duration::Duration;
 use itertools::Itertools;
 
@@ -378,4 +378,53 @@ pub fn get_incomings(config: &Config, account_id: &str, interval: &Interval, tim
     historical_amounts.reverse();
 
     Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
+}
+
+// TODO: Write get_outgoing and get_incoming.
+pub fn get_outgoing(config: &Config, account_id: &str) -> ApiServiceResult<Money> {
+    let account = try!(get_account(&config, &account_id));
+    let currency = account.currency;
+
+    let from = UTC::today().with_day(1).unwrap();
+    let transactions: Vec<Transaction> = raw_transactions(&config, &account_id, 250, 1).unwrap_or(vec![]).into_iter().filter(|t| {
+        let transaction_date = parse_utc_date_from_transaction(&t);
+        transaction_date > from
+    }).collect();
+
+    let from_float_to_cent_integer = |t: &Transaction| {
+        (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
+    };
+    let from_cent_integer_to_float = |amount: i64| {
+        format!("{:.2}", amount as f64 / 100f64)
+    };
+
+    let outgoing = transactions.iter().map(from_float_to_cent_integer).filter(|ci| {
+        *ci < 0
+    }).fold(0i64, |sum, v| sum + v);
+
+    Ok(Money::new(from_cent_integer_to_float(outgoing), currency))
+}
+
+pub fn get_incoming(config: &Config, account_id: &str) -> ApiServiceResult<Money> {
+    let account = try!(get_account(&config, &account_id));
+    let currency = account.currency;
+
+    let from = UTC::today().with_day(1).unwrap();
+    let transactions: Vec<Transaction> = raw_transactions(&config, &account_id, 250, 1).unwrap_or(vec![]).into_iter().filter(|t| {
+        let transaction_date = parse_utc_date_from_transaction(&t);
+        transaction_date > from
+    }).collect();
+
+    let from_float_to_cent_integer = |t: &Transaction| {
+        (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
+    };
+    let from_cent_integer_to_float = |amount: i64| {
+        format!("{:.2}", amount as f64 / 100f64)
+    };
+
+    let incoming = transactions.iter().map(from_float_to_cent_integer).filter(|ci| {
+        *ci > 0
+    }).fold(0i64, |sum, v| sum + v);
+
+    Ok(Money::new(from_cent_integer_to_float(incoming), currency))
 }

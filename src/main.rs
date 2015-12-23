@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions_with_currency, get_balances, get_incomings, get_outgoings};
+use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions_with_currency, get_balances, get_outgoings, get_incomings, get_outgoing, get_incoming};
 use client::{Interval, Timeframe};
 
 use std::path::PathBuf;
@@ -70,11 +70,13 @@ struct Args {
     cmd_list: bool,
     cmd_show: bool,
     cmd_accounts: bool,
-    cmd_balance: bool,
     cmd_transactions: bool,
     cmd_balances: bool,
     cmd_outgoings: bool,
     cmd_incomings: bool,
+    cmd_balance: bool,
+    cmd_outgoing: bool,
+    cmd_incoming: bool,
     arg_account: AccountType,
     flag_interval: Interval,
     flag_timeframe: Timeframe,
@@ -283,6 +285,24 @@ fn pick_command(arguments: Args) {
                 Some(config) => show_balance(&config, &arg_account, &flag_hide_currency),
             }
         },
+        Args { cmd_outgoing, ref arg_account, flag_hide_currency, .. } if cmd_outgoing == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => show_outgoing(&config, &arg_account, &flag_hide_currency),
+            }
+        },
+        Args { cmd_incoming, ref arg_account, flag_hide_currency, .. } if cmd_incoming == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => show_incoming(&config, &arg_account, &flag_hide_currency),
+            }
+        },
         Args { cmd_transactions, ref arg_account, flag_show_description, ref flag_timeframe, .. } if cmd_transactions == true => {
             match get_config() {
                 None => {
@@ -365,7 +385,7 @@ fn list_accounts(config: &Config) {
     }
 }
 
-fn represent_show_balance(balance_with_currency: &Money, hide_currency: &bool) {
+fn represent_money(balance_with_currency: &Money, hide_currency: &bool) {
     println!("{}", balance_with_currency.get_balance_for_display(&hide_currency))
 }
 
@@ -382,9 +402,31 @@ fn get_account_id(config: &Config, account: &AccountType) -> String{
 fn show_balance(config: &Config, account: &AccountType, hide_currency: &bool) {
     let account_id = get_account_id(&config, &account);
     match get_account_balance(&config, &account_id) {
-        Ok(balance) => represent_show_balance(&balance, &hide_currency),
+        Ok(balance) => represent_money(&balance, &hide_currency),
         Err(e) => {
             error!("Unable to get account balance: {}", e);
+            exit(1)
+        },
+    }
+}
+
+fn show_outgoing(config: &Config, account: &AccountType, hide_currency: &bool) {
+    let account_id = get_account_id(&config, &account);
+    match get_outgoing(&config, &account_id) {
+        Ok(outgoing) => represent_money(&outgoing, &hide_currency),
+        Err(e) => {
+            error!("Unable to get outgoing: {}", e);
+            exit(1)
+        },
+    }
+}
+
+fn show_incoming(config: &Config, account: &AccountType, hide_currency: &bool) {
+    let account_id = get_account_id(&config, &account);
+    match get_incoming(&config, &account_id) {
+        Ok(incoming) => represent_money(&incoming, &hide_currency),
+        Err(e) => {
+            error!("Unable to get incoming: {}", e);
             exit(1)
         },
     }
