@@ -64,21 +64,21 @@ Hopefully Teller will add support for querying transactions soon.
 ▁▁▁▂▃▂▃▄▄▅▆█
 ```
 
-#### Have I spent more money this month than I normally do on average?
+#### Have I spent more money this month than I normally do?
 
 ```sh
 #!/bin/sh
 
 CURRENT_OUTGOING=`teller show outgoing current --hide-currency | sed 's/^-//'`;
 OUTGOINGS=`teller list outgoings current --output=spark`;
-SUM_OUTGOING=`echo "$OUTGOINGS" | sed 's/ /+/g' | bc -l` | sed 's/^-//';
+SUM_OUTGOING=`echo "$OUTGOINGS" | sed 's/ /+/g' | bc -l | sed 's/^-//'`;
 COUNT_OUTGOING=`echo "$OUTGOINGS" | wc -w | xargs`;
 AVERAGE_OUTGOING=`bc <<< "scale=2; $SUM_OUTGOING / $COUNT_OUTGOING"`;
 
 if (( $(bc <<< "$CURRENT_OUTGOING > $AVERAGE_OUTGOING") ))
 then
   DIFFERENCE_OUTGOING=`bc <<< "scale=2; $CURRENT_OUTGOING - $AVERAGE_OUTGOING"`;
-  echo "You're spending more money than you normally do! You've spent £$AVERAGE_OUTGOING which is £$DIFFERENCE_OUTGOING more than normal." | terminal-notifier -title "💰 Alert" -subtitle "Current Outgoing is £$CURRENT_OUTGOING";
+  echo "You've spent £$DIFFERENCE_OUTGOING more than normal." | terminal-notifier -title "💰 Spending Alert" -subtitle "Current Outgoing is £$CURRENT_OUTGOING";
 fi
 ```
 
