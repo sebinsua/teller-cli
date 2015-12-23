@@ -60,7 +60,7 @@ Hopefully Teller will add support for querying transactions soon.
 #### Am I saving money with a chart :chart_with_upwards_trend: with [`spark`](https://github.com/holman/spark)
 
 ```
-> teller list totals business --amount-type=all --interval=monthly --timeframe=year --output=spark | spark
+> teller list balances business --interval=monthly --timeframe=year --output=spark | spark
 ▁▁▁▂▃▂▃▄▄▅▆█
 ```
 

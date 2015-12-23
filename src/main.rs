@@ -34,17 +34,25 @@ const USAGE: &'static str = "Banking for the command line.
 Usage:
     teller init
     teller [list] accounts
-    teller [show] balance [<account> --hide-currency]
     teller [list] transactions [<account> --timeframe=<tf> --show-description]
-    teller [list] totals [<account> --amount-type=<at> --interval=<itv> --timeframe=<tf> --output=<of>]
+    teller [list] (balances|outgoings|incomings) [<account> --interval=<itv> --timeframe=<tf> --output=<of>]
+    teller [show] balance [<account> --hide-currency]
+    teller [show] outgoing [<account> --hide-currency]
+    teller [show] incoming [<account> --hide-currency]
     teller [--help | --version]
 
 Commands:
     init                    Configure.
     list accounts           List accounts.
-    show balance            Show the balance of an account (default: current).
-    list transactions       List transactions (default: current).
-    list totals             List sums of transactions (all, incoming, outgoing) during a timeframe (default: current).
+    list transactions       List transactions.
+    list balances           List balances during a timeframe.
+    list outgoings          List outgoings during a timeframe.
+    list incomings          List incomings during a timeframe.
+    show balance            Show the current balance.
+    show outgoing           Show the current outgoing.
+    show incoming           Show the current incoming.
+
+    NOTE: By default commands are applied to the 'current' <account>.
 
 Options:
     -h --help               Show this screen.
@@ -53,7 +61,6 @@ Options:
     -t --timeframe=<tf>     Operate upon a named period of time (default: 6-months).
     -d --show-description   Show descriptions against transactions.
     -c --hide-currency      Show money without currency codes.
-    -a --amount-type=<at>   Select only certain amount types (e.g. all, incoming, outgoing).
     -o --output=<of>        Output in a particular format (e.g. spark).
 ";
 
@@ -65,13 +72,14 @@ struct Args {
     cmd_accounts: bool,
     cmd_balance: bool,
     cmd_transactions: bool,
-    cmd_totals: bool,
+    cmd_balances: bool,
+    cmd_outgoings: bool,
+    cmd_incomings: bool,
     arg_account: AccountType,
     flag_interval: Interval,
     flag_timeframe: Timeframe,
     flag_show_description: bool,
     flag_hide_currency: bool,
-    flag_amount_type: AmountType,
     flag_output: OutputFormat,
     flag_help: bool,
     flag_version: bool,
@@ -142,26 +150,6 @@ impl Decodable for OutputFormat {
             "spark" => OutputFormat::Spark,
             "standard" => OutputFormat::Standard,
             _ => default_output_format,
-        })
-    }
-}
-
-#[derive(Debug)]
-enum AmountType {
-    All,
-    Outgoing,
-    Incoming,
-}
-
-impl Decodable for AmountType {
-    fn decode<D: Decoder>(d: &mut D) -> Result<AmountType, D::Error> {
-        let s = try!(d.read_str());
-        let default_amount_type = AmountType::All;
-        Ok(match &*s {
-            "all" => AmountType::All,
-            "outgoing" => AmountType::Outgoing,
-            "incoming" => AmountType::Incoming,
-            _ => default_amount_type,
         })
     }
 }
@@ -304,19 +292,31 @@ fn pick_command(arguments: Args) {
                 Some(config) => list_transactions(&config, &arg_account, &flag_timeframe, &flag_show_description),
             }
         },
-        Args { cmd_totals, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_amount_type, ref flag_output, .. } if cmd_totals == true => {
+        Args { cmd_balances, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_balances == true => {
             match get_config() {
                 None => {
                     error!("Configuration could not be found or created so command not executed");
                     exit(1)
                 }
-                Some(config) => {
-                    match *flag_amount_type {
-                        AmountType::All => list_balances(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
-                        AmountType::Incoming => list_incomings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
-                        AmountType::Outgoing => list_outgoings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
-                    }
-                },
+                Some(config) => list_balances(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
+            }
+        },
+        Args { cmd_incomings, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_incomings == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => list_incomings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
+            }
+        },
+        Args { cmd_outgoings, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_outgoings == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => list_outgoings(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output),
             }
         },
         Args { flag_help, flag_version, .. } if flag_help == true || flag_version == true => (),
