@@ -87,7 +87,7 @@ fi
 ### From release
 
 ```
-> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.2/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
+> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.3/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
 ```
 
 ### From source
