@@ -97,10 +97,25 @@ pub struct HistoricalAmountsWithCurrency {
     pub currency: String,
 }
 
-impl Balances {
-    pub fn new<S: Into<String>>(historical_amounts: Vec<IntervalAmount>, currency: S) -> Balances {
-        Balances {
+impl HistoricalAmountsWithCurrency {
+    pub fn new<S: Into<String>>(historical_amounts: Vec<IntervalAmount>, currency: S) -> HistoricalAmountsWithCurrency {
+        HistoricalAmountsWithCurrency {
             historical_amounts: historical_amounts,
+            currency: currency.into(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TransactionsWithCurrrency {
+    pub transactions: Vec<Transaction>,
+    pub currency: String,
+}
+
+impl TransactionsWithCurrrency {
+    pub fn new<S: Into<String>>(transactions: Vec<Transaction>, currency: S) -> TransactionsWithCurrrency {
+        TransactionsWithCurrrency {
+            transactions: transactions,
             currency: currency.into(),
         }
     }
@@ -253,6 +268,15 @@ pub fn get_transactions(config: &Config, account_id: &str, timeframe: &Timeframe
             page_through_transactions(from)
         },
     }
+}
+
+pub fn get_transactions_with_currency(config: &Config, account_id: &str, timeframe: &Timeframe) -> ApiServiceResult<TransactionsWithCurrrency> {
+    let transactions = try!(get_transactions(&config, &account_id, &timeframe));
+
+    let account = try!(get_account(&config, &account_id));
+    let currency = account.currency;
+
+    Ok(TransactionsWithCurrrency::new(transactions, currency))
 }
 
 fn get_grouped_transaction_aggregates(config: &Config, account_id: &str, interval: &Interval, timeframe: &Timeframe, aggregate_txs: &Fn((String, Vec<Transaction>)) -> (String, i64)) -> ApiServiceResult<Vec<(String, i64)>> {

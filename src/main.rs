@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions, get_balances, get_incomings, get_outgoings};
+use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions_with_currency, get_balances, get_incomings, get_outgoings};
 use client::{Interval, Timeframe};
 
 use std::path::PathBuf;
@@ -420,9 +420,8 @@ fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &str, 
 
 fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timeframe, show_description: &bool) {
     let account_id = get_account_id(&config, &account);
-    let currency = "GBP"; // TODO: This shouldn't be hardcoded. Comes from account
-    match get_transactions(&config, &account_id, &timeframe) {
-        Ok(transactions) => represent_list_transactions(&transactions, &currency, &show_description),
+    match get_transactions_with_currency(&config, &account_id, &timeframe) {
+        Ok(transactions_with_currency) => represent_list_transactions(&transactions_with_currency.transactions, &transactions_with_currency.currency, &show_description),
         Err(e) => {
             error!("Unable to list transactions: {}", e);
             exit(1)
