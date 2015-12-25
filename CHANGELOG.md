@@ -3,6 +3,11 @@
 All notable changes to this project will be [documented](http://keepachangelog.com/) in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## [v0.0.4](https://github.com/sebinsua/teller-cli/releases/tag/v0.0.4) - 2015-12-25
+
+- `list counterparties` gives access to a list of outgoing transactions grouped by their counterparty.
+- Outgoing values are now positive since the word outgoing already describes a negative flow of money.
+
 ## [v0.0.3](https://github.com/sebinsua/teller-cli/releases/tag/v0.0.3) - 2015-12-22
 
 - `list totals` became `list balances|outgoing|incoming`.

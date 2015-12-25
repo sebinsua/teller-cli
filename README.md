@@ -1,7 +1,7 @@
 # teller-cli ![Build Status](https://img.shields.io/travis/sebinsua/teller-cli.svg)
 > Banking for your command line
 
-The purpose of this command line tool is to provide a human-interface for your bank and not merely to be a one-to-one match with the underlying API.
+This tool provides useful ways of interrogating your bank through your command line, and is not merely meant to be a one-to-one match with underlying APIs.
 
 It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there.
 
@@ -15,7 +15,7 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 
 *e.g.*
 
-![Instructions](http://i.imgur.com/cR3IMAN.png)
+![Instructions](http://i.imgur.com/cvZRwev.png)
 
 ## Why?
 
@@ -87,7 +87,7 @@ fi
 ### From release
 
 ```
-> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.3/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
+> curl -L https://github.com/sebinsua/teller-cli/releases/download/v0.0.4/teller > /usr/local/bin/teller && chmod +x /usr/local/bin/teller
 ```
 
 ### From source

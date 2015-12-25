@@ -13,7 +13,7 @@ mod config;
 mod client;
 mod inquirer;
 
-use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions_with_currency, get_balances, get_outgoings, get_incomings, get_outgoing, get_incoming};
+use client::{Account, Transaction, Money, HistoricalAmountsWithCurrency, Balances, Outgoings, Incomings, get_accounts, get_account_balance, get_transactions_with_currency, get_counterparties, get_balances, get_outgoings, get_incomings, get_outgoing, get_incoming};
 use client::{Interval, Timeframe};
 
 use std::path::PathBuf;
@@ -35,6 +35,7 @@ Usage:
     teller init
     teller [list] accounts
     teller [list] transactions [<account> --timeframe=<tf> --show-description]
+    teller [list] counterparties [<account> --timeframe=<tf> --count=<n>]
     teller [list] (balances|outgoings|incomings) [<account> --interval=<itv> --timeframe=<tf> --output=<of>]
     teller [show] balance [<account> --hide-currency]
     teller [show] outgoing [<account> --hide-currency]
@@ -45,6 +46,7 @@ Commands:
     init                    Configure.
     list accounts           List accounts.
     list transactions       List transactions.
+    list counterparties     List outgoing amounts grouped by counterparties.
     list balances           List balances during a timeframe.
     list outgoings          List outgoings during a timeframe.
     list incomings          List incomings during a timeframe.
@@ -57,8 +59,9 @@ Commands:
 Options:
     -h --help               Show this screen.
     -V --version            Show version.
-    -i --interval=<itv>     Group by an interval of time (default: monthly).
-    -t --timeframe=<tf>     Operate upon a named period of time (default: 6-months).
+    -i --interval=<itv>     Group by an interval of time [default: monthly].
+    -t --timeframe=<tf>     Operate upon a named period of time [default: 6-months].
+    -c --count=<n>          Only the top N elements [default: 10].
     -d --show-description   Show descriptions against transactions.
     -c --hide-currency      Show money without currency codes.
     -o --output=<of>        Output in a particular format (e.g. spark).
@@ -71,6 +74,7 @@ struct Args {
     cmd_show: bool,
     cmd_accounts: bool,
     cmd_transactions: bool,
+    cmd_counterparties: bool,
     cmd_balances: bool,
     cmd_outgoings: bool,
     cmd_incomings: bool,
@@ -80,6 +84,7 @@ struct Args {
     arg_account: AccountType,
     flag_interval: Interval,
     flag_timeframe: Timeframe,
+    flag_count: i64,
     flag_show_description: bool,
     flag_hide_currency: bool,
     flag_output: OutputFormat,
@@ -312,6 +317,15 @@ fn pick_command(arguments: Args) {
                 Some(config) => list_transactions(&config, &arg_account, &flag_timeframe, &flag_show_description),
             }
         },
+        Args { cmd_counterparties, ref arg_account, ref flag_timeframe, flag_count, .. } if cmd_counterparties == true => {
+            match get_config() {
+                None => {
+                    error!("Configuration could not be found or created so command not executed");
+                    exit(1)
+                }
+                Some(config) => list_counterparties(&config, &arg_account, &flag_timeframe, &flag_count),
+            }
+        },
         Args { cmd_balances, ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } if cmd_balances == true => {
             match get_config() {
                 None => {
@@ -466,6 +480,37 @@ fn list_transactions(config: &Config, account: &AccountType, timeframe: &Timefra
         Ok(transactions_with_currency) => represent_list_transactions(&transactions_with_currency.transactions, &transactions_with_currency.currency, &show_description),
         Err(e) => {
             error!("Unable to list transactions: {}", e);
+            exit(1)
+        },
+    }
+}
+
+fn represent_list_counterparties(counterparties: &Vec<(String, String)>, currency: &str, count: &i64) {
+    let mut counterparties_table = String::new();
+
+    counterparties_table.push_str(&format!("row\tcounterparty\tamount ({})\n", currency));
+    let skip_n = counterparties.len() - (*count as usize);
+    for (idx, counterparty) in counterparties.iter().skip(skip_n).enumerate() {
+        let row_number = (idx + 1) as u32;
+        let new_counterparty_row = format!("{}\t{}\t{}\n", row_number, counterparty.0, counterparty.1);
+        counterparties_table = counterparties_table + &new_counterparty_row;
+    }
+
+    let mut tw = TabWriter::new(Vec::new());
+    write!(&mut tw, "{}", counterparties_table).unwrap();
+    tw.flush().unwrap();
+
+    let counterparties_str = String::from_utf8(tw.unwrap()).unwrap();
+
+    println!("{}", counterparties_str)
+}
+
+fn list_counterparties(config: &Config, account: &AccountType, timeframe: &Timeframe, count: &i64) {
+    let account_id = get_account_id(&config, &account);
+    match get_counterparties(&config, &account_id, &timeframe) {
+        Ok(counterparties_with_currency) => represent_list_counterparties(&counterparties_with_currency.counterparties, &counterparties_with_currency.currency, &count),
+        Err(e) => {
+            error!("Unable to list counterparties: {}", e);
             exit(1)
         },
     }
