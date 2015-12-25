@@ -5,7 +5,7 @@ This tool provides useful ways of interrogating your bank through your command l
 
 It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there.
 
-**:point_up_2: Heads up!** (1) This is my first [Rust](https://www.rust-lang.org/) project, (2) the interface is in flux while I try to make it human-like without ending up redundant, and (3) there are [no tests yet](https://github.com/sebinsua/teller-cli/issues/1)!
+**:point_up_2: Heads up!** (1) This is my first [Rust](https://www.rust-lang.org/) project, (2) the interface is in flux while I try to make it human-like without ending up redundant, and (3) there are [no tests yet](https://github.com/sebinsua/teller-cli/issues/1)! This is soon to change with the release of [v1.0.0](https://github.com/sebinsua/teller-cli/issues?q=is%3Aopen+is%3Aissue+milestone%3Av1.0.0).
 
 ## Usage
 
