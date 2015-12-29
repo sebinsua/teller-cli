@@ -34,7 +34,6 @@ impl Answer {
     }
 }
 
-
 pub fn ask_question(question: &Question) -> Answer {
     let question_name = question.name.to_owned();
     println!("{}", question.message);

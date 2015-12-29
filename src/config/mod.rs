@@ -11,6 +11,8 @@ use std::io::prelude::*; // Required for read_to_string use later.
 
 use self::error::ConfigError;
 
+use cli::parse::AccountType;
+
 #[derive(Debug, RustcEncodable, RustcDecodable)]
 pub struct Config {
     pub auth_token: String,
@@ -86,4 +88,14 @@ pub fn write_config(config_file: &mut File, config: &Config) -> Result<(), Confi
     try!(config_file.write_all(content_str.as_bytes()));
 
     Ok(())
+}
+
+pub fn get_account_id(config: &Config, account: &AccountType) -> String{
+    let default_account_id = config.current.to_owned();
+    match *account {
+        AccountType::Current => config.current.to_owned(),
+        AccountType::Savings => config.savings.to_owned(),
+        AccountType::Business => config.business.to_owned(),
+        _ => default_account_id,
+    }
 }
