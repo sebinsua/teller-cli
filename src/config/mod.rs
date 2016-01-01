@@ -55,7 +55,7 @@ pub fn get_config_file(config_path: &PathBuf) -> Option<File> {
     let config_file = File::open(&config_path);
     match config_file {
         Err(ref e) if ErrorKind::NotFound == e.kind() => {
-            debug!("no config file found");
+            debug!("No config file found");
             None
         },
         Err(_) => panic!("Unable to read config!"),
@@ -90,7 +90,7 @@ pub fn write_config(config_file: &mut File, config: &Config) -> Result<(), Confi
     Ok(())
 }
 
-pub fn get_account_id(config: &Config, account: &AccountType) -> String{
+pub fn get_account_id(config: &Config, account: &AccountType) -> String {
     let default_account_id = config.current.to_owned();
     match *account {
         AccountType::Current => config.current.to_owned(),

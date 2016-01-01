@@ -12,15 +12,15 @@ extern crate itertools;
 mod cli;
 mod command;
 mod config;
-mod client;
 mod inquirer;
+mod client;
 
 use docopt::Docopt;
-use cli::parse::get_command_type;
+use cli::get_command_type;
 use command::execute;
 use std::process;
 
-// const NAME: &'static str = "teller"; // TODO: Can this be placed into the usage automatically?
+// const NAME: &'static str = "teller";
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "Banking for the command line.
 
@@ -72,7 +72,7 @@ fn main() {
 
     let command_type = get_command_type(&arguments);
 
-    let return_code = execute(&command_type, &arguments);
+    let return_code = execute(USAGE, &command_type, &arguments);
 
     process::exit(return_code)
 }

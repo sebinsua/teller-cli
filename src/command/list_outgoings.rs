@@ -16,7 +16,7 @@ pub fn list_outgoings_command(config: &Config, account: &AccountType, interval: 
             0
         },
         Err(e) => {
-            error!("Unable to list ougoings: {}", e);
+            error!("Unable to list outgoings: {}", e);
             1
         },
     }

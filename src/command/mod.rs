@@ -1,4 +1,3 @@
-mod do_nothing;
 mod show_usage;
 mod initialise;
 mod list_accounts;
@@ -11,11 +10,10 @@ mod list_balances;
 mod list_outgoings;
 mod list_incomings;
 
-use cli::parse::{CommandType, CliArgs};
+use cli::{CommandType, CliArgs};
 use config::{Config, get_config_path, get_config_file, read_config};
 use self::initialise::configure_cli;
 
-use self::do_nothing::do_nothing_command;
 use self::show_usage::show_usage_command;
 use self::initialise::initialise_command;
 use self::list_accounts::list_accounts_command;
@@ -46,15 +44,20 @@ fn get_config() -> Option<Config> {
     }
 }
 
-pub fn execute(command_type: &CommandType, arguments: &CliArgs) -> i32 {
+fn do_nothing_command() -> i32 {
+    debug!("--help or --version were passed in so we are not going to execute anything more...");
+    0
+}
+
+pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> i32 {
     match *command_type {
         CommandType::None => do_nothing_command(),
-        CommandType::ShowUsage => show_usage_command(),
+        CommandType::ShowUsage => show_usage_command(usage),
         CommandType::Initialise => initialise_command(),
         _ => {
             match get_config() {
                 None => {
-                    error!("Configuration could not be found or created so command not executed");
+                    error!("The command was not executed since a config could not be found or created");
                     1
                 },
                 Some(config) => {
@@ -94,7 +97,7 @@ pub fn execute(command_type: &CommandType, arguments: &CliArgs) -> i32 {
                             let CliArgs { ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } = *arguments;
                             list_incomings_command(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output)
                         },
-                        _ => panic!("TODO: This shouldn't be accessible"),
+                        _ => panic!("This shoult not be accessible"),
                     }
                 },
             }
