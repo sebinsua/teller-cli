@@ -1,4 +1,4 @@
-use config::{Config, get_account_id};
+use config::Config;
 use client::{Transaction, get_transactions_with_currency};
 use cli::arg_types::{AccountType, Timeframe};
 
@@ -52,7 +52,7 @@ pub fn list_transactions_command(config: &Config,
                                  show_description: &bool)
                                  -> i32 {
     info!("Calling the list transactions command");
-    let account_id = get_account_id(&config, &account);
+    let account_id = config.get_account_id(&account);
     get_transactions_with_currency(&config, &account_id, &timeframe)
         .map(|transactions_with_currency| {
             represent_list_transactions(&transactions_with_currency.transactions,

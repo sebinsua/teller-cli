@@ -37,6 +37,28 @@ impl Config {
                     "".to_string(),
                     "".to_string())
     }
+
+    pub fn get_account_id(&self, account: &AccountType) -> String {
+        let default_account_id = self.current.to_owned();
+        match *account {
+            AccountType::Current => self.current.to_owned(),
+            AccountType::Savings => self.savings.to_owned(),
+            AccountType::Business => self.business.to_owned(),
+            _ => default_account_id,
+        }
+    }
+
+    pub fn get_account_alias_for_id<'a>(&self, account_id: &str) -> &'a str {
+        if *account_id == self.current {
+            "(current)"
+        } else if *account_id == self.savings {
+            "(savings)"
+        } else if *account_id == self.business {
+            "(business)"
+        } else {
+            ""
+        }
+    }
 }
 
 pub fn get_config_path() -> PathBuf {
@@ -107,14 +129,4 @@ pub fn write_config(config_file: &mut File, config: &Config) -> Result<(), Confi
     try!(config_file.write_all(content_str.as_bytes()));
 
     Ok(())
-}
-
-pub fn get_account_id(config: &Config, account: &AccountType) -> String {
-    let default_account_id = config.current.to_owned();
-    match *account {
-        AccountType::Current => config.current.to_owned(),
-        AccountType::Savings => config.savings.to_owned(),
-        AccountType::Business => config.business.to_owned(),
-        _ => default_account_id,
-    }
 }

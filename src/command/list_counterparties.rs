@@ -1,4 +1,4 @@
-use config::{Config, get_account_id};
+use config::Config;
 use client::get_counterparties;
 use cli::arg_types::{AccountType, Timeframe};
 
@@ -36,7 +36,7 @@ pub fn list_counterparties_command(config: &Config,
                                    count: &i64)
                                    -> i32 {
     info!("Calling the list counterparties command");
-    let account_id = get_account_id(&config, &account);
+    let account_id = config.get_account_id(&account);
     get_counterparties(&config, &account_id, &timeframe)
         .map(|counterparties_with_currency| {
             represent_list_counterparties(&counterparties_with_currency.counterparties,

@@ -1,4 +1,4 @@
-use config::{Config, get_account_id};
+use config::Config;
 use client::{Incomings, get_incomings};
 use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
@@ -15,7 +15,7 @@ pub fn list_incomings_command(config: &Config,
                               output: &OutputFormat)
                               -> i32 {
     info!("Calling the list incomings command");
-    let account_id = get_account_id(&config, &account);
+    let account_id = config.get_account_id(&account);
     get_incomings(&config, &account_id, &interval, &timeframe)
         .map(|incomings| {
             represent_list_incomings(&incomings, &output);

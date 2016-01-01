@@ -1,4 +1,4 @@
-use config::{Config, get_account_id};
+use config::Config;
 use client::{Outgoings, get_outgoings};
 use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
@@ -15,7 +15,7 @@ pub fn list_outgoings_command(config: &Config,
                               output: &OutputFormat)
                               -> i32 {
     info!("Calling the list outgoings command");
-    let account_id = get_account_id(&config, &account);
+    let account_id = config.get_account_id(&account);
     get_outgoings(&config, &account_id, &interval, &timeframe)
         .map(|outgoings| {
             represent_list_outgoings(&outgoings, &output);

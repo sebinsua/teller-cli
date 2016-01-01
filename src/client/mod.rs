@@ -133,6 +133,20 @@ impl CounterpartiesWithCurrrency {
     }
 }
 
+/*
+pub struct TellerClient<'b> {
+    auth_token: &'b str,
+}
+
+impl<'b> TellerClient<'b> {
+    pub fn new(auth_token: &'b str) -> TellerClient {
+        TellerClient {
+            auth_token: auth_token,
+        }
+    }
+}
+*/
+
 fn get_auth_header(auth_token: &str) -> Authorization<Bearer> {
     Authorization(Bearer { token: auth_token.to_string() })
 }
