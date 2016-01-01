@@ -13,18 +13,16 @@ pub fn configure_cli(config_file_path: &PathBuf) -> Option<Config> {
                 Ok(mut config_file) => {
                     let _ = write_config(&mut config_file, &config);
                     Some(config)
-                },
+                }
                 Err(e) => panic!("ERROR: opening file to write: {}", e),
             }
-        },
+        }
     }
 }
 
 fn ask_questions_for_config() -> Option<Config> {
-    let get_auth_token_question = Question::new(
-        "auth_token",
-        "What is your `auth_token` on teller.io?",
-    );
+    let get_auth_token_question = Question::new("auth_token",
+                                                "What is your `auth_token` on teller.io?");
 
     let auth_token_answer = ask_question(&get_auth_token_question);
 
@@ -37,7 +35,8 @@ fn ask_questions_for_config() -> Option<Config> {
     };
     represent_list_accounts(&accounts, &config);
 
-    println!("Please type the row (e.g. 3) of the account you wish to place against an alias and press <enter> to set this in the config. Leave empty if irrelevant.");
+    println!("Please type the row (e.g. 3) of the account you wish to place against an alias and \
+              press <enter> to set this in the config. Leave empty if irrelevant.");
     print!("\n");
 
     let questions = vec![
@@ -59,7 +58,10 @@ fn ask_questions_for_config() -> Option<Config> {
     let mut fa_iter = non_empty_answers.iter();
 
     let to_account_id = |answer: &Answer| {
-        let row_number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
+        let row_number: u32 = answer.value
+                                    .parse()
+                                    .expect(&format!("ERROR: {:?} did not contain a number",
+                                                     answer));
         accounts[(row_number - 1) as usize].id.to_owned()
     };
 
@@ -87,7 +89,9 @@ fn ask_questions_for_config() -> Option<Config> {
 pub fn initialise_command() -> i32 {
     info!("Calling the initialise command");
     let config_file_path = get_config_path();
-    println!("To create the config ({}) we need to find out your `auth_token` and assign aliases to some common bank accounts.", config_file_path.display());
+    println!("To create the config ({}) we need to find out your `auth_token` and assign aliases \
+              to some common bank accounts.",
+             config_file_path.display());
     print!("\n");
     configure_cli(&config_file_path);
     0

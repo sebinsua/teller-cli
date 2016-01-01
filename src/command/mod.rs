@@ -32,7 +32,8 @@ use self::list_incomings::list_incomings_command;
 fn ensure_config() -> Option<Config> {
     get_config().or_else(|| {
         let config_file_path = get_config_path();
-        println!("A config file could not be found at: {}", config_file_path.display());
+        println!("A config file could not be found at: {}",
+                 config_file_path.display());
         println!("You will need to set the `auth_token` and give aliases to your bank accounts");
         print!("\n");
         configure_cli(&config_file_path)
@@ -52,50 +53,95 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
         _ => {
             match ensure_config() {
                 None => {
-                    error!("The command was not executed since a config could not be found or created");
+                    error!("The command was not executed since a config could not be found or \
+                            generated");
                     1
-                },
+                }
                 Some(config) => {
                     match *command_type {
-                        CommandType::ListAccounts => {
-                            list_accounts_command(&config)
-                        },
+                        CommandType::ListAccounts => list_accounts_command(&config),
                         CommandType::ShowBalance => {
                             let CliArgs { ref arg_account, flag_hide_currency, .. } = *arguments;
                             show_balance_command(&config, &arg_account, &flag_hide_currency)
-                        },
+                        }
                         CommandType::ShowOutgoing => {
                             let CliArgs { ref arg_account, flag_hide_currency, .. } = *arguments;
                             show_outgoing_command(&config, &arg_account, &flag_hide_currency)
-                        },
+                        }
                         CommandType::ShowIncoming => {
                             let CliArgs { ref arg_account, flag_hide_currency, .. } = *arguments;
                             show_incoming_command(&config, &arg_account, &flag_hide_currency)
-                        },
+                        }
                         CommandType::ListTransactions => {
-                            let CliArgs { ref arg_account, flag_show_description, ref flag_timeframe, .. } = *arguments;
-                            list_transactions_command(&config, &arg_account, &flag_timeframe, &flag_show_description)
-                        },
+                            let CliArgs {
+                                ref arg_account,
+                                flag_show_description,
+                                ref flag_timeframe,
+                                ..
+                            } = *arguments;
+                            list_transactions_command(&config,
+                                                      &arg_account,
+                                                      &flag_timeframe,
+                                                      &flag_show_description)
+                        }
                         CommandType::ListCounterparties => {
-                            let CliArgs { ref arg_account, ref flag_timeframe, flag_count, .. } = *arguments;
-                            list_counterparties_command(&config, &arg_account, &flag_timeframe, &flag_count)
-                        },
+                            let CliArgs {
+                                ref arg_account,
+                                ref flag_timeframe,
+                                flag_count,
+                                ..
+                            } = *arguments;
+                            list_counterparties_command(&config,
+                                                        &arg_account,
+                                                        &flag_timeframe,
+                                                        &flag_count)
+                        }
                         CommandType::ListBalances => {
-                            let CliArgs { ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } = *arguments;
-                            list_balances_command(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output)
-                        },
+                            let CliArgs {
+                                ref arg_account,
+                                ref flag_interval,
+                                ref flag_timeframe,
+                                ref flag_output,
+                                ..
+                            } = *arguments;
+                            list_balances_command(&config,
+                                                  &arg_account,
+                                                  &flag_interval,
+                                                  &flag_timeframe,
+                                                  &flag_output)
+                        }
                         CommandType::ListOutgoings => {
-                            let CliArgs { ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } = *arguments;
-                            list_outgoings_command(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output)
-                        },
+                            let CliArgs {
+                                ref arg_account,
+                                ref flag_interval,
+                                ref flag_timeframe,
+                                ref flag_output,
+                                ..
+                            } = *arguments;
+                            list_outgoings_command(&config,
+                                                   &arg_account,
+                                                   &flag_interval,
+                                                   &flag_timeframe,
+                                                   &flag_output)
+                        }
                         CommandType::ListIncomings => {
-                            let CliArgs { ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } = *arguments;
-                            list_incomings_command(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output)
-                        },
+                            let CliArgs {
+                                ref arg_account,
+                                ref flag_interval,
+                                ref flag_timeframe,
+                                ref flag_output,
+                                ..
+                            } = *arguments;
+                            list_incomings_command(&config,
+                                                   &arg_account,
+                                                   &flag_interval,
+                                                   &flag_timeframe,
+                                                   &flag_output)
+                        }
                         _ => panic!("This should not have been executable but for some reason was"),
                     }
-                },
+                }
             }
-        },
+        }
     }
 }

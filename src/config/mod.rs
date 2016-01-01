@@ -32,12 +32,10 @@ impl Config {
     }
 
     pub fn new_with_auth_token_only<S: Into<String>>(auth_token: S) -> Config {
-        Config::new(
-            auth_token.into(),
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-        )
+        Config::new(auth_token.into(),
+                    "".to_string(),
+                    "".to_string(),
+                    "".to_string())
     }
 }
 
@@ -51,13 +49,15 @@ pub fn get_config_path() -> PathBuf {
 }
 
 pub fn get_config_file(config_path: &PathBuf) -> Option<File> {
-    info!("Checking whether config file within {} exists", config_path.to_str().unwrap());
+    let config_path_str = config_path.to_str().unwrap_or("[error: config_path#to_str fails]");
+    info!("Checking whether config file within {} exists",
+          config_path_str);
     let config_file = File::open(&config_path);
     match config_file {
         Err(ref e) if ErrorKind::NotFound == e.kind() => {
             debug!("No config file found");
             None
-        },
+        }
         Err(_) => panic!("Unable to read config!"),
         Ok(config_file) => Some(config_file),
     }
@@ -66,7 +66,9 @@ pub fn get_config_file(config_path: &PathBuf) -> Option<File> {
 pub fn get_config_file_to_write(config_path: &PathBuf) -> Result<File, StdIoError> {
     let config_file = File::create(&config_path);
     match config_file {
-        Err(ref e) if ErrorKind::PermissionDenied == e.kind() => panic!("Permission to read config denied"),
+        Err(ref e) if ErrorKind::PermissionDenied == e.kind() => {
+            panic!("Permission to read config denied")
+        }
         _ => config_file,
     }
 }
@@ -78,9 +80,13 @@ pub fn get_config() -> Option<Config> {
         Some(mut config_file) => {
             match read_config(&mut config_file) {
                 Ok(config) => Some(config),
-                Err(e) => panic!("ERROR: attempting to read file {}: {}", config_file_path.display(), e),
+                Err(e) => {
+                    panic!("ERROR: attempting to read file {}: {}",
+                           config_file_path.display(),
+                           e)
+                }
             }
-        },
+        }
     }
 }
 

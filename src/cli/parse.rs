@@ -51,7 +51,7 @@ impl Decodable for Interval {
             _ => {
                 error!("teller-cli currently only suports an interval of monthly");
                 default_interval
-            },
+            }
         })
     }
 }
@@ -99,17 +99,17 @@ pub enum CommandType {
 
 pub fn get_command_type(arguments: &CliArgs) -> CommandType {
     match *arguments {
-        CliArgs { cmd_init, .. } if cmd_init == true => CommandType::Initialise,
-        CliArgs { cmd_accounts, .. } if cmd_accounts == true => CommandType::ListAccounts,
-        CliArgs { cmd_balance, .. } if cmd_balance == true => CommandType::ShowBalance,
-        CliArgs { cmd_outgoing, .. } if cmd_outgoing == true => CommandType::ShowOutgoing,
-        CliArgs { cmd_incoming, .. } if cmd_incoming == true => CommandType::ShowIncoming,
-        CliArgs { cmd_transactions, .. } if cmd_transactions == true => CommandType::ListTransactions,
-        CliArgs { cmd_counterparties, .. } if cmd_counterparties == true => CommandType::ListCounterparties,
-        CliArgs { cmd_balances, .. } if cmd_balances == true => CommandType::ListBalances,
-        CliArgs { cmd_incomings, .. } if cmd_incomings == true => CommandType::ListIncomings,
-        CliArgs { cmd_outgoings, .. } if cmd_outgoings == true => CommandType::ListOutgoings,
-        CliArgs { flag_help, flag_version, .. } if flag_help == true || flag_version == true => CommandType::None,
+        CliArgs { cmd_init, .. } if cmd_init => CommandType::Initialise,
+        CliArgs { cmd_accounts, .. } if cmd_accounts => CommandType::ListAccounts,
+        CliArgs { cmd_balance, .. } if cmd_balance => CommandType::ShowBalance,
+        CliArgs { cmd_outgoing, .. } if cmd_outgoing => CommandType::ShowOutgoing,
+        CliArgs { cmd_incoming, .. } if cmd_incoming => CommandType::ShowIncoming,
+        CliArgs { cmd_transactions, .. } if cmd_transactions => CommandType::ListTransactions,
+        CliArgs { cmd_counterparties, .. } if cmd_counterparties => CommandType::ListCounterparties,
+        CliArgs { cmd_balances, .. } if cmd_balances => CommandType::ListBalances,
+        CliArgs { cmd_incomings, .. } if cmd_incomings => CommandType::ListIncomings,
+        CliArgs { cmd_outgoings, .. } if cmd_outgoings => CommandType::ListOutgoings,
+        CliArgs { flag_help, flag_version, .. } if flag_help || flag_version => CommandType::None,
         _ => CommandType::ShowUsage,
     }
 }

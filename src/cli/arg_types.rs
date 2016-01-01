@@ -4,7 +4,7 @@ pub enum AccountType {
     Savings,
     Business,
     Unknown(String),
-    None
+    None,
 }
 
 #[derive(Debug)]
