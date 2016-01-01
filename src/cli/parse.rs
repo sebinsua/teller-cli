@@ -1,5 +1,6 @@
-use client::{Interval, Timeframe};
 use rustc_serialize::{Decodable, Decoder};
+
+use super::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
 #[derive(Debug, RustcDecodable)]
 pub struct CliArgs {
@@ -24,15 +25,6 @@ pub struct CliArgs {
     pub flag_output: OutputFormat,
     flag_help: bool,
     flag_version: bool,
-}
-
-#[derive(Debug)]
-pub enum AccountType {
-    Current,
-    Savings,
-    Business,
-    Unknown(String),
-    None
 }
 
 impl Decodable for AccountType {
@@ -75,12 +67,6 @@ impl Decodable for Timeframe {
             _ => default_timeframe,
         })
     }
-}
-
-#[derive(Debug)]
-pub enum OutputFormat {
-    Spark,
-    Standard,
 }
 
 impl Decodable for OutputFormat {

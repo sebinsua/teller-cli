@@ -1,5 +1,7 @@
 pub mod error;
 
+use cli::arg_types::{Interval, Timeframe};
+
 use config::Config;
 
 use hyper::{Client, Url};
@@ -15,18 +17,6 @@ use std::io::prelude::*; // Required for read_to_string use later.
 use std::str::FromStr;
 
 use self::error::TellerClientError;
-
-#[derive(Debug)]
-pub enum Interval {
-    Monthly,
-}
-
-#[derive(Debug)]
-pub enum Timeframe {
-    Year,
-    SixMonths,
-    ThreeMonths,
-}
 
 pub type ApiServiceResult<T> = Result<T, TellerClientError>;
 pub type IntervalAmount = (String, String);

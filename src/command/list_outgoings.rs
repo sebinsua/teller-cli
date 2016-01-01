@@ -1,8 +1,8 @@
 use config::{Config, get_account_id};
-use client::{Outgoings, Interval, Timeframe, get_outgoings};
-use cli::parse::{AccountType, OutputFormat};
+use client::{Outgoings, get_outgoings};
+use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
-use super::list_balances::represent_list_amounts;
+use super::representations::represent_list_amounts;
 
 fn represent_list_outgoings(hac: &Outgoings, output: &OutputFormat) {
     represent_list_amounts("outgoing", &hac, &output)

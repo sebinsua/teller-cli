@@ -1,8 +1,8 @@
 use config::{Config, get_account_id};
-use client::{Incomings, Interval, Timeframe, get_incomings};
-use cli::parse::{AccountType, OutputFormat};
+use client::{Incomings, get_incomings};
+use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
-use super::list_balances::represent_list_amounts;
+use super::representations::represent_list_amounts;
 
 fn represent_list_incomings(hac: &Incomings, output: &OutputFormat) {
     represent_list_amounts("incoming", &hac, &output)

@@ -11,7 +11,7 @@ use std::io::prelude::*; // Required for read_to_string use later.
 
 use self::error::ConfigError;
 
-use cli::parse::AccountType;
+use cli::arg_types::AccountType;
 
 #[derive(Debug, RustcEncodable, RustcDecodable)]
 pub struct Config {

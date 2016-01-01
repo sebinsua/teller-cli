@@ -1,3 +1,5 @@
+mod representations;
+
 mod show_usage;
 mod initialise;
 mod list_accounts;

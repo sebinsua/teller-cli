@@ -1,6 +1,6 @@
 use config::{Config, get_account_id};
-use client::{Timeframe, get_counterparties};
-use cli::parse::AccountType;
+use client::get_counterparties;
+use cli::arg_types::{AccountType, Timeframe};
 
 use std::io::Write;
 use tabwriter::TabWriter;

@@ -1,6 +1,6 @@
 use client::get_account_balance;
 use config::{Config, get_account_id};
-use cli::parse::AccountType;
+use cli::arg_types::AccountType;
 use client::Money;
 
 fn represent_money(money_with_currency: &Money, hide_currency: &bool) {

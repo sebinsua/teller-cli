@@ -1,6 +1,6 @@
 use config::{Config, get_account_id};
-use client::{Transaction, Timeframe, get_transactions_with_currency};
-use cli::parse::AccountType;
+use client::{Transaction, get_transactions_with_currency};
+use cli::arg_types::{AccountType, Timeframe};
 
 use std::io::Write;
 use tabwriter::TabWriter;
