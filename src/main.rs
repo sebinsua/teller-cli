@@ -25,63 +25,38 @@ const USAGE: &'static str = "Banking for the command line.
 
 Usage:
     teller init
-    teller \
-                             [list] accounts
-    teller [list] transactions [<account> \
-                             --timeframe=<tf> --show-description]
-    teller [list] \
-                             counterparties [<account> --timeframe=<tf> --count=<n>]
-    teller \
-                             [list] (balances|outgoings|incomings) [<account> --interval=<itv> \
-                             --timeframe=<tf> --output=<of>]
-    teller [show] balance [<account> \
-                             --hide-currency]
-    teller [show] outgoing [<account> \
-                             --hide-currency]
-    teller [show] incoming [<account> \
-                             --hide-currency]
+    teller [list] accounts
+    teller [list] transactions [<account> --timeframe=<tf> --show-description]
+    teller [list] counterparties [<account> --timeframe=<tf> --count=<n>]
+    teller [list] (balances|outgoings|incomings) [<account> --interval=<itv> --timeframe=<tf> --output=<of>]
+    teller [show] balance [<account> --hide-currency]
+    teller [show] outgoing [<account> --hide-currency]
+    teller [show] incoming [<account> --hide-currency]
     teller [--help | --version]
 
 Commands:
-    init                    \
-                             Configure.
+    init                    Configure.
     list accounts           List accounts.
-    list \
-                             transactions       List transactions.
-    list counterparties     \
-                             List outgoing amounts grouped by counterparties.
-    list balances           \
-                             List balances during a timeframe.
-    list outgoings          List \
-                             outgoings during a timeframe.
-    list incomings          List \
-                             incomings during a timeframe.
-    show balance            Show the \
-                             current balance.
-    show outgoing           Show the current \
-                             outgoing.
+    list transactions       List transactions.
+    list counterparties     List outgoing amounts grouped by counterparties.
+    list balances           List balances during a timeframe.
+    list outgoings          List outgoings during a timeframe.
+    list incomings          List incomings during a timeframe.
+    show balance            Show the current balance.
+    show outgoing           Show the current outgoing.
     show incoming           Show the current incoming.
 
-    \
-                             NOTE: By default commands are applied to the 'current' <account>.
+    NOTE: By default commands are applied to the 'current' <account>.
 
-\
-                             Options:
+Options:
     -h --help               Show this screen.
-    -V \
-                             --version            Show version.
-    -i --interval=<itv>     Group \
-                             by an interval of time [default: monthly].
-    -t --timeframe=<tf>     \
-                             Operate upon a named period of time [default: 6-months].
-    -c \
-                             --count=<n>          Only the top N elements [default: 10].
-    -d \
-                             --show-description   Show descriptions against transactions.
-    -c \
-                             --hide-currency      Show money without currency codes.
-    -o \
-                             --output=<of>        Output in a particular format (e.g. spark).
+    -V --version            Show version.
+    -i --interval=<itv>     Group by an interval of time [default: monthly].
+    -t --timeframe=<tf>     Operate upon a named period of time [default: 6-months].
+    -c --count=<n>          Only the top N elements [default: 10].
+    -d --show-description   Show descriptions against transactions.
+    -c --hide-currency      Show money without currency codes.
+    -o --output=<of>        Output in a particular format (e.g. spark).
 ";
 
 fn main() {

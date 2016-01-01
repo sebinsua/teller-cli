@@ -2,8 +2,7 @@ use config::Config;
 use client::{Transaction, TransactionsWithCurrrency, TellerClient};
 use cli::arg_types::{AccountType, Timeframe};
 
-use std::io::Write;
-use tabwriter::TabWriter;
+use super::representations::to_aligned_table;
 
 fn represent_list_transactions(transactions: &Vec<Transaction>,
                                currency: &str,
@@ -37,11 +36,7 @@ fn represent_list_transactions(transactions: &Vec<Transaction>,
         }
     }
 
-    let mut tw = TabWriter::new(Vec::new());
-    write!(&mut tw, "{}", transactions_table).unwrap();
-    tw.flush().unwrap();
-
-    let transactions_str = String::from_utf8(tw.unwrap()).unwrap();
+    let transactions_str = to_aligned_table(&transactions_table);
 
     println!("{}", transactions_str)
 }

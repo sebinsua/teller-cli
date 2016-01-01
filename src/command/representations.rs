@@ -5,6 +5,16 @@ use config::Config;
 use client::{HistoricalAmountsWithCurrency, Account};
 use cli::arg_types::OutputFormat;
 
+pub fn to_aligned_table(table_str: &str) -> String {
+    let mut tw = TabWriter::new(Vec::new());
+    write!(&mut tw, "{}", table_str).unwrap();
+    tw.flush().unwrap();
+
+    let aligned_table_str = String::from_utf8(tw.unwrap()).unwrap();
+
+    aligned_table_str
+}
+
 pub fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
     let mut accounts_table = String::new();
     accounts_table.push_str("row\taccount no.\tbalance\n");
@@ -20,11 +30,7 @@ pub fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
         accounts_table = accounts_table + &new_account_row;
     }
 
-    let mut tw = TabWriter::new(Vec::new());
-    write!(&mut tw, "{}", accounts_table).unwrap();
-    tw.flush().unwrap();
-
-    let accounts_str = String::from_utf8(tw.unwrap()).unwrap();
+    let accounts_str = to_aligned_table(&accounts_table);
 
     println!("{}", accounts_str)
 }
@@ -55,11 +61,7 @@ pub fn represent_list_amounts(amount_type: &str,
                 hac_table = hac_table + &new_amount;
             }
 
-            let mut tw = TabWriter::new(Vec::new());
-            write!(&mut tw, "{}", hac_table).unwrap();
-            tw.flush().unwrap();
-
-            let hac_str = String::from_utf8(tw.unwrap()).unwrap();
+            let hac_str = to_aligned_table(&hac_table);
 
             println!("{}", hac_str)
         }

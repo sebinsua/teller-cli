@@ -18,12 +18,12 @@ pub fn list_outgoings_command(config: &Config,
     let account_id = config.get_account_id(&account);
     let teller = TellerClient::new(&config.auth_token);
     teller.get_outgoings(&account_id, &interval, &timeframe)
-        .map(|outgoings| {
-            represent_list_outgoings(&outgoings, &output);
-            0
-        })
-        .unwrap_or_else(|err| {
-            error!("Unable to list outgoings: {}", err);
-            1
-        })
+          .map(|outgoings| {
+              represent_list_outgoings(&outgoings, &output);
+              0
+          })
+          .unwrap_or_else(|err| {
+              error!("Unable to list outgoings: {}", err);
+              1
+          })
 }

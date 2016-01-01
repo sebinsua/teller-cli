@@ -13,12 +13,12 @@ pub fn show_incoming_command(config: &Config, account: &AccountType, hide_curren
     let account_id = config.get_account_id(&account);
     let teller = TellerClient::new(&config.auth_token);
     teller.get_incoming(&account_id)
-        .map(|incoming| {
-            represent_money(&incoming, &hide_currency);
-            0
-        })
-        .unwrap_or_else(|err| {
-            error!("Unable to get incoming: {}", err);
-            1
-        })
+          .map(|incoming| {
+              represent_money(&incoming, &hide_currency);
+              0
+          })
+          .unwrap_or_else(|err| {
+              error!("Unable to get incoming: {}", err);
+              1
+          })
 }

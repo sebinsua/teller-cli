@@ -18,12 +18,12 @@ pub fn list_incomings_command(config: &Config,
     let account_id = config.get_account_id(&account);
     let teller = TellerClient::new(&config.auth_token);
     teller.get_incomings(&account_id, &interval, &timeframe)
-        .map(|incomings| {
-            represent_list_incomings(&incomings, &output);
-            0
-        })
-        .unwrap_or_else(|err| {
-            error!("Unable to list incomings: {}", err);
-            1
-        })
+          .map(|incomings| {
+              represent_list_incomings(&incomings, &output);
+              0
+          })
+          .unwrap_or_else(|err| {
+              error!("Unable to list incomings: {}", err);
+              1
+          })
 }

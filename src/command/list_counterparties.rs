@@ -2,8 +2,7 @@ use config::Config;
 use client::TellerClient;
 use cli::arg_types::{AccountType, Timeframe};
 
-use std::io::Write;
-use tabwriter::TabWriter;
+use super::representations::to_aligned_table;
 
 fn represent_list_counterparties(counterparties: &Vec<(String, String)>,
                                  currency: &str,
@@ -21,11 +20,7 @@ fn represent_list_counterparties(counterparties: &Vec<(String, String)>,
         counterparties_table = counterparties_table + &new_counterparty_row;
     }
 
-    let mut tw = TabWriter::new(Vec::new());
-    write!(&mut tw, "{}", counterparties_table).unwrap();
-    tw.flush().unwrap();
-
-    let counterparties_str = String::from_utf8(tw.unwrap()).unwrap();
+    let counterparties_str = to_aligned_table(&counterparties_table);
 
     println!("{}", counterparties_str)
 }
@@ -39,14 +34,14 @@ pub fn list_counterparties_command(config: &Config,
     let account_id = config.get_account_id(&account);
     let teller = TellerClient::new(&config.auth_token);
     teller.get_counterparties(&account_id, &timeframe)
-        .map(|counterparties_with_currency| {
-            represent_list_counterparties(&counterparties_with_currency.counterparties,
-                                          &counterparties_with_currency.currency,
-                                          &count);
-            0
-        })
-        .unwrap_or_else(|err| {
-            error!("Unable to list counterparties: {}", err);
-            1
-        })
+          .map(|counterparties_with_currency| {
+              represent_list_counterparties(&counterparties_with_currency.counterparties,
+                                            &counterparties_with_currency.currency,
+                                            &count);
+              0
+          })
+          .unwrap_or_else(|err| {
+              error!("Unable to list counterparties: {}", err);
+              1
+          })
 }
