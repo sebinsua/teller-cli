@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use config::{Config, get_config_path, get_config_file_to_write, write_config};
 use inquirer::{Question, Answer, ask_question, ask_questions};
 
-use client::get_accounts;
+use client::TellerClient;
 use super::representations::represent_list_accounts;
 
 pub fn configure_cli(config_file_path: &PathBuf) -> Option<Config> {
@@ -29,9 +29,12 @@ fn ask_questions_for_config() -> Option<Config> {
     let mut config = Config::new_with_auth_token_only(auth_token_answer.value);
 
     print!("\n");
-    let accounts = match get_accounts(&config) {
-        Ok(accounts) => accounts,
-        Err(e) => panic!("Unable to list accounts: {}", e),
+    let accounts = {
+        let teller = TellerClient::new(&config.auth_token);
+        match teller.get_accounts() {
+            Ok(accounts) => accounts,
+            Err(e) => panic!("Unable to list accounts: {}", e),
+        }
     };
     represent_list_accounts(&accounts, &config);
 

@@ -1,5 +1,5 @@
 use config::Config;
-use client::get_counterparties;
+use client::TellerClient;
 use cli::arg_types::{AccountType, Timeframe};
 
 use std::io::Write;
@@ -37,7 +37,8 @@ pub fn list_counterparties_command(config: &Config,
                                    -> i32 {
     info!("Calling the list counterparties command");
     let account_id = config.get_account_id(&account);
-    get_counterparties(&config, &account_id, &timeframe)
+    let teller = TellerClient::new(&config.auth_token);
+    teller.get_counterparties(&account_id, &timeframe)
         .map(|counterparties_with_currency| {
             represent_list_counterparties(&counterparties_with_currency.counterparties,
                                           &counterparties_with_currency.currency,

@@ -1,5 +1,5 @@
 use config::Config;
-use client::{Transaction, get_transactions_with_currency};
+use client::{Transaction, TransactionsWithCurrrency, TellerClient};
 use cli::arg_types::{AccountType, Timeframe};
 
 use std::io::Write;
@@ -53,11 +53,11 @@ pub fn list_transactions_command(config: &Config,
                                  -> i32 {
     info!("Calling the list transactions command");
     let account_id = config.get_account_id(&account);
-    get_transactions_with_currency(&config, &account_id, &timeframe)
+    let teller = TellerClient::new(&config.auth_token);
+    teller.get_transactions_with_currency(&account_id, &timeframe)
         .map(|transactions_with_currency| {
-            represent_list_transactions(&transactions_with_currency.transactions,
-                                        &transactions_with_currency.currency,
-                                        &show_description);
+            let TransactionsWithCurrrency { transactions, currency } = transactions_with_currency;
+            represent_list_transactions(&transactions, &currency, &show_description);
             0
         })
         .unwrap_or_else(|err| {

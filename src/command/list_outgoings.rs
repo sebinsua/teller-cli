@@ -1,5 +1,5 @@
 use config::Config;
-use client::{Outgoings, get_outgoings};
+use client::{Outgoings, TellerClient};
 use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
 use super::representations::represent_list_amounts;
@@ -16,7 +16,8 @@ pub fn list_outgoings_command(config: &Config,
                               -> i32 {
     info!("Calling the list outgoings command");
     let account_id = config.get_account_id(&account);
-    get_outgoings(&config, &account_id, &interval, &timeframe)
+    let teller = TellerClient::new(&config.auth_token);
+    teller.get_outgoings(&account_id, &interval, &timeframe)
         .map(|outgoings| {
             represent_list_outgoings(&outgoings, &output);
             0

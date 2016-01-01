@@ -1,5 +1,5 @@
 use config::Config;
-use client::{Balances, get_balances};
+use client::{Balances, TellerClient};
 use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
 use super::representations::represent_list_amounts;
@@ -16,7 +16,8 @@ pub fn list_balances_command(config: &Config,
                              -> i32 {
     info!("Calling the list balances command");
     let account_id = config.get_account_id(&account);
-    get_balances(&config, &account_id, &interval, &timeframe)
+    let teller = TellerClient::new(&config.auth_token);
+    teller.get_balances(&account_id, &interval, &timeframe)
         .map(|balances| {
             represent_list_balances(&balances, &output);
             0
