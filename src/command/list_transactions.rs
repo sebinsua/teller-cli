@@ -34,15 +34,13 @@ fn represent_list_transactions(transactions: &Vec<Transaction>, currency: &str, 
 }
 
 pub fn list_transactions_command(config: &Config, account: &AccountType, timeframe: &Timeframe, show_description: &bool) -> i32 {
+    info!("Calling the list transactions command");
     let account_id = get_account_id(&config, &account);
-    match get_transactions_with_currency(&config, &account_id, &timeframe) {
-        Ok(transactions_with_currency) => {
-            represent_list_transactions(&transactions_with_currency.transactions, &transactions_with_currency.currency, &show_description);
-            0
-        },
-        Err(e) => {
-            error!("Unable to list transactions: {}", e);
-            1
-        },
-    }
+    get_transactions_with_currency(&config, &account_id, &timeframe).map(|transactions_with_currency| {
+        represent_list_transactions(&transactions_with_currency.transactions, &transactions_with_currency.currency, &show_description);
+        0
+    }).unwrap_or_else(|err| {
+        error!("Unable to list transactions: {}", err);
+        1
+    })
 }

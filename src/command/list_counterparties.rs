@@ -26,15 +26,13 @@ fn represent_list_counterparties(counterparties: &Vec<(String, String)>, currenc
 }
 
 pub fn list_counterparties_command(config: &Config, account: &AccountType, timeframe: &Timeframe, count: &i64) -> i32 {
+    info!("Calling the list counterparties command");
     let account_id = get_account_id(&config, &account);
-    match get_counterparties(&config, &account_id, &timeframe) {
-        Ok(counterparties_with_currency) => {
-            represent_list_counterparties(&counterparties_with_currency.counterparties, &counterparties_with_currency.currency, &count);
-            0
-        },
-        Err(e) => {
-            error!("Unable to list counterparties: {}", e);
-            1
-        },
-    }
+    get_counterparties(&config, &account_id, &timeframe).map(|counterparties_with_currency| {
+        represent_list_counterparties(&counterparties_with_currency.counterparties, &counterparties_with_currency.currency, &count);
+        0
+    }).unwrap_or_else(|err| {
+        error!("Unable to list counterparties: {}", err);
+        1
+    })
 }

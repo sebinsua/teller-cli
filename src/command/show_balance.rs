@@ -8,15 +8,13 @@ fn represent_money(money_with_currency: &Money, hide_currency: &bool) {
 }
 
 pub fn show_balance_command(config: &Config, account: &AccountType, hide_currency: &bool) -> i32 {
+    info!("Calling the show balance command");
     let account_id = get_account_id(&config, &account);
-    match get_account_balance(&config, &account_id) {
-        Ok(balance) => {
-            represent_money(&balance, &hide_currency);
-            0
-        },
-        Err(e) => {
-            error!("Unable to get account balance: {}", e);
-            1
-        },
-    }
+    get_account_balance(&config, &account_id).map(|balance| {
+        represent_money(&balance, &hide_currency);
+        0
+    }).unwrap_or_else(|err| {
+        error!("Unable to get account balance: {}", err);
+        1
+    })
 }

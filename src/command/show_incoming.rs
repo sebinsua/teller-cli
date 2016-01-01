@@ -8,15 +8,13 @@ fn represent_money(money_with_currency: &Money, hide_currency: &bool) {
 }
 
 pub fn show_incoming_command(config: &Config, account: &AccountType, hide_currency: &bool) -> i32 {
+    info!("Calling the show incoming command");
     let account_id = get_account_id(&config, &account);
-    match get_incoming(&config, &account_id) {
-        Ok(incoming) => {
-            represent_money(&incoming, &hide_currency);
-            0
-        },
-        Err(e) => {
-            error!("Unable to get incoming: {}", e);
-            1
-        },
-    }
+    get_incoming(&config, &account_id).map(|incoming| {
+        represent_money(&incoming, &hide_currency);
+        0
+    }).unwrap_or_else(|err| {
+        error!("Unable to get incoming: {}", err);
+        1
+    })
 }

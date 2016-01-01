@@ -90,6 +90,7 @@ fn ask_questions_for_config() -> Option<Config> {
 }
 
 pub fn initialise_command() -> i32 {
+    info!("Calling the initialise command");
     let config_file_path = get_config_path();
     println!("To create the config ({}) we need to find out your `auth_token` and assign aliases to some common bank accounts.", config_file_path.display());
     print!("\n");

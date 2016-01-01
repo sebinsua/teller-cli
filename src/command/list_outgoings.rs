@@ -9,15 +9,13 @@ fn represent_list_outgoings(hac: &Outgoings, output: &OutputFormat) {
 }
 
 pub fn list_outgoings_command(config: &Config, account: &AccountType, interval: &Interval, timeframe: &Timeframe, output: &OutputFormat) -> i32 {
+    info!("Calling the list outgoings command");
     let account_id = get_account_id(&config, &account);
-    match get_outgoings(&config, &account_id, &interval, &timeframe) {
-        Ok(outgoings) => {
-            represent_list_outgoings(&outgoings, &output);
-            0
-        },
-        Err(e) => {
-            error!("Unable to list outgoings: {}", e);
-            1
-        },
-    }
+    get_outgoings(&config, &account_id, &interval, &timeframe).map(|outgoings| {
+        represent_list_outgoings(&outgoings, &output);
+        0
+    }).unwrap_or_else(|err| {
+        error!("Unable to list outgoings: {}", err);
+        1
+    })
 }
