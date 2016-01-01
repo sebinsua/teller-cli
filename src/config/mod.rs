@@ -71,6 +71,19 @@ pub fn get_config_file_to_write(config_path: &PathBuf) -> Result<File, StdIoErro
     }
 }
 
+pub fn get_config() -> Option<Config> {
+    let config_file_path = get_config_path();
+    match get_config_file(&config_file_path) {
+        None => None,
+        Some(mut config_file) => {
+            match read_config(&mut config_file) {
+                Ok(config) => Some(config),
+                Err(e) => panic!("ERROR: attempting to read file {}: {}", config_file_path.display(), e),
+            }
+        },
+    }
+}
+
 pub fn read_config(config_file: &mut File) -> Result<Config, ConfigError> {
     let mut content_str = String::new();
     try!(config_file.read_to_string(&mut content_str));

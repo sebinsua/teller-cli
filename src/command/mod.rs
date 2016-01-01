@@ -13,7 +13,8 @@ mod list_outgoings;
 mod list_incomings;
 
 use cli::{CommandType, CliArgs};
-use config::{Config, get_config_path, get_config_file, read_config};
+
+use config::{Config, get_config, get_config_path};
 use self::initialise::configure_cli;
 
 use self::show_usage::show_usage_command;
@@ -28,22 +29,14 @@ use self::list_balances::list_balances_command;
 use self::list_outgoings::list_outgoings_command;
 use self::list_incomings::list_incomings_command;
 
-fn get_config() -> Option<Config> {
-    let config_file_path = get_config_path();
-    match get_config_file(&config_file_path) {
-        None => {
-            println!("A config file could not be found at: {}", config_file_path.display());
-            println!("You will need to set the `auth_token` and give aliases to your bank accounts");
-            print!("\n");
-            configure_cli(&config_file_path)
-        },
-        Some(mut config_file) => {
-            match read_config(&mut config_file) {
-                Ok(config) => Some(config),
-                Err(e) => panic!("ERROR: attempting to read file {}: {}", config_file_path.display(), e),
-            }
-        },
-    }
+fn ensure_config() -> Option<Config> {
+    get_config().or_else(|| {
+        let config_file_path = get_config_path();
+        println!("A config file could not be found at: {}", config_file_path.display());
+        println!("You will need to set the `auth_token` and give aliases to your bank accounts");
+        print!("\n");
+        configure_cli(&config_file_path)
+    })
 }
 
 fn do_nothing_command() -> i32 {
@@ -57,7 +50,7 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
         CommandType::ShowUsage => show_usage_command(usage),
         CommandType::Initialise => initialise_command(),
         _ => {
-            match get_config() {
+            match ensure_config() {
                 None => {
                     error!("The command was not executed since a config could not be found or created");
                     1
@@ -99,7 +92,7 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
                             let CliArgs { ref arg_account, ref flag_interval, ref flag_timeframe, ref flag_output, .. } = *arguments;
                             list_incomings_command(&config, &arg_account, &flag_interval, &flag_timeframe, &flag_output)
                         },
-                        _ => panic!("This shoult not be accessible"),
+                        _ => panic!("This should not have been executable but for some reason was"),
                     }
                 },
             }
