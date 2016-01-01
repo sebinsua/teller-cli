@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use config::{Config, get_config_path, get_config_file_to_write, write_config};
-use inquirer::{Question, Answer, ask_question};
+use inquirer::{Question, Answer, ask_question, ask_questions};
 
 use client::get_accounts;
 use super::representations::represent_list_accounts;
@@ -55,30 +55,25 @@ fn ask_questions_for_config() -> Option<Config> {
         ),
     ];
 
-    let answers: Vec<Answer> = questions.iter().map(ask_question).collect();
-    let non_empty_answers: Vec<&Answer> = answers.iter().filter(|&answer| !answer.value.is_empty()).collect();
+    let non_empty_answers = ask_questions(&questions);
     let mut fa_iter = non_empty_answers.iter();
 
-    match fa_iter.find(|&answer| answer.name == "current") {
-        None => (),
-        Some(answer) => {
-            let row_number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
-            config.current = accounts[(row_number - 1) as usize].id.to_owned()
-        },
+    let to_account_id = |answer: &Answer| {
+        let row_number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
+        accounts[(row_number - 1) as usize].id.to_owned()
     };
-    match fa_iter.find(|&answer| answer.name == "savings") {
+
+    match fa_iter.find(|&answer| answer.name == "current").map(&to_account_id) {
         None => (),
-        Some(answer) => {
-            let row_number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
-            config.savings = accounts[(row_number - 1) as usize].id.to_owned()
-        }
+        Some(account_id) => config.current = account_id,
     };
-    match fa_iter.find(|&answer| answer.name == "business") {
+    match fa_iter.find(|&answer| answer.name == "savings").map(&to_account_id) {
         None => (),
-        Some(answer) => {
-            let row_number: u32 = answer.value.parse().expect(&format!("ERROR: {:?} did not contain a number", answer));
-            config.business = accounts[(row_number - 1) as usize].id.to_owned()
-        }
+        Some(account_id) => config.savings = account_id,
+    };
+    match fa_iter.find(|&answer| answer.name == "business").map(&to_account_id) {
+        None => (),
+        Some(account_id) => config.business = account_id,
     };
 
     if config.auth_token.is_empty() {

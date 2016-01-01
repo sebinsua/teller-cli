@@ -20,7 +20,6 @@ use cli::get_command_type;
 use command::execute;
 use std::process;
 
-// const NAME: &'static str = "teller";
 const VERSION: Option<&'static str> = option_env!("CARGO_PKG_VERSION");
 const USAGE: &'static str = "Banking for the command line.
 

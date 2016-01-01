@@ -43,3 +43,9 @@ pub fn ask_question(question: &Question) -> Answer {
         Err(error) => panic!("Unable to read line for {}: {}", question_name, error),
     }
 }
+
+pub fn ask_questions(questions: &Vec<Question>) -> Vec<Answer> {
+    let answers: Vec<Answer> = questions.iter().map(ask_question).collect();
+    let non_empty_answers: Vec<Answer> = answers.into_iter().filter(|answer| !answer.value.is_empty()).collect();
+    non_empty_answers
+}

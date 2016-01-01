@@ -1,3 +1,3 @@
 pub mod ask;
 
-pub use self::ask::{Question, Answer, ask_question};
+pub use self::ask::{Question, Answer, ask_question, ask_questions};
