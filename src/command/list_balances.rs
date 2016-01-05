@@ -1,6 +1,6 @@
 use config::Config;
 use api::TellerClient;
-use api::inform::{Balances, GetAggregates};
+use api::inform::{Balances, GetBalances};
 use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
 use super::representations::represent_list_amounts;

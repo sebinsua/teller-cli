@@ -3,4 +3,3 @@ pub mod error;
 pub mod inform;
 
 pub use self::client::*;
-pub use self::inform::*;

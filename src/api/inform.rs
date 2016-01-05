@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::str::FromStr; // Use of #from_str.
 
 use super::client::{TellerClient, ApiServiceResult, Transaction, Account};
-use super::client::parse_utc_date_from_transaction; // TODO: Ew. bad bad bad.
+use super::client::parse_utc_date_from_transaction;
 
 pub type IntervalAmount = (String, String);
 pub type Balances = HistoricalAmountsWithCurrency;
@@ -273,64 +273,51 @@ impl<'a> GetCounterparties for TellerClient<'a> {
     }
 }
 
-// TODO: Break this up into multiple modules.
-pub trait GetAggregates {
-    fn get_grouped_transaction_aggregates(&self,
-                                          account_id: &str,
-                                          interval: &Interval,
-                                          timeframe: &Timeframe,
-                                          aggregate_txs: &Fn(DateStringToTransactions) -> (String, i64))
-                                          -> ApiServiceResult<Vec<(String, i64)>>;
-
+pub trait GetBalances {
     fn get_balances(&self,
                     account_id: &str,
                     interval: &Interval,
                     timeframe: &Timeframe) -> ApiServiceResult<Balances>;
+}
 
+pub trait GetOutgoings {
     fn get_outgoings(&self,
                      account_id: &str,
                      interval: &Interval,
                      timeframe: &Timeframe) -> ApiServiceResult<Outgoings>;
+}
 
+pub trait GetIncomings {
     fn get_incomings(&self,
                      account_id: &str,
                      interval: &Interval,
                      timeframe: &Timeframe) -> ApiServiceResult<Incomings>;
 }
 
-impl<'a> GetAggregates for TellerClient<'a> {
-    fn get_grouped_transaction_aggregates(&self,
-                                          account_id: &str,
-                                          interval: &Interval,
-                                          timeframe: &Timeframe,
-                                          aggregate_txs: &Fn(DateStringToTransactions) -> (String, i64))
-                                          -> ApiServiceResult<Vec<(String, i64)>> {
-        let transactions: Vec<Transaction> = self.get_transactions(&account_id, &timeframe)
-                                                 .unwrap_or(vec![]);
+fn to_grouped_transaction_aggregates(transactions: Vec<Transaction>,
+                                     interval: &Interval,
+                                     aggregate_txs: &Fn(DateStringToTransactions) -> (String, i64))
+                                     -> Vec<(String, i64)> {
+    let mut month_year_grouped_transactions: Vec<(String, i64)> = transactions.into_iter().group_by(|t| {
+        let transaction_date = parse_utc_date_from_transaction(&t);
+        match *interval {
+            Interval::Monthly => {
+                let group_name = transaction_date.format("%m-%Y").to_string();
+                group_name
+            }
+        }
+    }).map(aggregate_txs).collect();
+    month_year_grouped_transactions.reverse();
 
-        let mut month_year_grouped_transactions: Vec<(String, i64)> =
-            transactions.into_iter()
-                        .group_by(|t| {
-                            let transaction_date = parse_utc_date_from_transaction(&t);
-                            match *interval {
-                                Interval::Monthly => {
-                                    let group_name = transaction_date.format("%m-%Y").to_string();
-                                    group_name
-                                }
-                            }
-                        })
-                        .map(aggregate_txs)
-                        .collect();
-        month_year_grouped_transactions.reverse();
+    month_year_grouped_transactions
+}
 
-        Ok(month_year_grouped_transactions)
-    }
-
+impl<'a> GetBalances for TellerClient<'a> {
     fn get_balances(&self,
-                        account_id: &str,
-                        interval: &Interval,
-                        timeframe: &Timeframe)
-                        -> ApiServiceResult<Balances> {
+                    account_id: &str,
+                    interval: &Interval,
+                    timeframe: &Timeframe)
+                    -> ApiServiceResult<Balances> {
         let sum_all = |myt: (String, Vec<Transaction>)| {
             let to_cent_integer = |t: &Transaction| {
                 (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
@@ -341,10 +328,10 @@ impl<'a> GetAggregates for TellerClient<'a> {
             (group_name, amount)
         };
 
-        let month_year_total_transactions = try!(self.get_grouped_transaction_aggregates(&account_id,
-                                                                                    &interval,
-                                                                                    &timeframe,
-                                                                                    &sum_all));
+        let transactions = self.get_transactions(&account_id, &timeframe).unwrap_or(vec![]);
+        let month_year_total_transactions = to_grouped_transaction_aggregates(transactions,
+                                                                              &interval,
+                                                                              &sum_all);
 
         let account = try!(self.get_account(&account_id));
         let current_balance = (f64::from_str(&account.balance).unwrap() * 100f64).round() as i64;
@@ -364,12 +351,14 @@ impl<'a> GetAggregates for TellerClient<'a> {
 
         Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
     }
+}
 
+impl<'a> GetOutgoings for TellerClient<'a> {
     fn get_outgoings(&self,
-                         account_id: &str,
-                         interval: &Interval,
-                         timeframe: &Timeframe)
-                         -> ApiServiceResult<Outgoings> {
+                     account_id: &str,
+                     interval: &Interval,
+                     timeframe: &Timeframe)
+                     -> ApiServiceResult<Outgoings> {
         let sum_outgoings = |myt: (String, Vec<Transaction>)| {
             let to_cent_integer = |t: &Transaction| {
                 (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
@@ -384,10 +373,10 @@ impl<'a> GetAggregates for TellerClient<'a> {
             (group_name, amount)
         };
 
-        let month_year_total_outgoing = try!(self.get_grouped_transaction_aggregates(&account_id,
-                                                                                &interval,
-                                                                                &timeframe,
-                                                                                &sum_outgoings));
+        let transactions = self.get_transactions(&account_id, &timeframe).unwrap_or(vec![]);
+        let month_year_total_outgoing = to_grouped_transaction_aggregates(transactions,
+                                                                          &interval,
+                                                                          &sum_outgoings);
 
         let account = try!(self.get_account(&account_id));
         let currency = account.currency;
@@ -403,12 +392,14 @@ impl<'a> GetAggregates for TellerClient<'a> {
 
         Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
     }
+}
 
+impl<'a> GetIncomings for TellerClient<'a> {
     fn get_incomings(&self,
-                         account_id: &str,
-                         interval: &Interval,
-                         timeframe: &Timeframe)
-                         -> ApiServiceResult<Incomings> {
+                     account_id: &str,
+                     interval: &Interval,
+                     timeframe: &Timeframe)
+                     -> ApiServiceResult<Incomings> {
         let sum_incomings = |myt: (String, Vec<Transaction>)| {
             let to_cent_integer = |t: &Transaction| {
                 (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
@@ -423,10 +414,10 @@ impl<'a> GetAggregates for TellerClient<'a> {
             (group_name, amount)
         };
 
-        let month_year_total_incoming = try!(self.get_grouped_transaction_aggregates(&account_id,
-                                                                                &interval,
-                                                                                &timeframe,
-                                                                                &sum_incomings));
+        let transactions = self.get_transactions(&account_id, &timeframe).unwrap_or(vec![]);
+        let month_year_total_incoming = to_grouped_transaction_aggregates(transactions,
+                                                                          &interval,
+                                                                          &sum_incomings);
 
         let account = try!(self.get_account(&account_id));
         let currency = account.currency;
@@ -442,5 +433,4 @@ impl<'a> GetAggregates for TellerClient<'a> {
 
         Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
     }
-
 }

@@ -1,6 +1,6 @@
 use config::Config;
 use api::TellerClient;
-use api::inform::{Outgoings, GetAggregates};
+use api::inform::{Outgoings, GetOutgoings};
 use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
 use super::representations::represent_list_amounts;
