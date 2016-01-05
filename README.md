@@ -82,22 +82,39 @@ then
 fi
 ```
 
-#### Show your current balance and last transaction in the OSX Menu Bar with [Bitbar](https://github.com/matryer/bitbar)
+#### Keep track of your spending from the OSX Menu Bar with [Bitbar](https://github.com/matryer/bitbar)
 
-`show-current-balance.1h.sh`
+Create a `track-spending.1h.sh` within your plugins directory:
 ```sh
 #!/bin/sh
-export PATH='/usr/local/bin:/usr/bin/:$PATH';                    
+export PATH='/usr/local/bin:/usr/bin/:$PATH';
 
+SPENDING_LIMIT='2000.00'; # Change this to a suitable spending limit.
+
+CURRENT_OUTGOING=`teller show outgoing current --hide-currency`;
 CURRENT_BALANCE=`teller show balance current --hide-currency`;
 LAST_TRANSACTION=`teller list transactions | tail -n 1 | pcregrep -o1 "[0-9]+[ ]+(.*)"`;
 
-echo "£$CURRENT_BALANCE";
+if (( $(bc <<< "$CURRENT_OUTGOING > $SPENDING_LIMIT") ))
+then
+  OVERSPEND=`bc <<< "scale=2; $CURRENT_OUTGOING - $SPENDING_LIMIT"`;
+  echo "🚨 £$OVERSPEND OVERSPENT|color=red";
+else
+  UNDERSPEND=`bc <<< "scale=2; $SPENDING_LIMIT - $CURRENT_OUTGOING"`;
+  if (( $(bc <<< "$UNDERSPEND > ($SPENDING_LIMIT/2)") ))
+  then
+    echo "🏦 £$UNDERSPEND remaining|color=green";
+  else
+    echo "🏦 £$UNDERSPEND remaining|color=#ffbf00";
+  fi
+fi
 echo "---";
-echo "$LAST_TRANSACTION";
+echo "Current Account: £$CURRENT_BALANCE";
+echo "Current Outgoing: £$CURRENT_OUTGOING";
+echo "Last TX: $LAST_TRANSACTION";
 ```
 
-![Current Balance in OSX Menu Bar](http://i.imgur.com/BzkazSB.png)
+![Tracking spending in the OSX Menu Bar](http://i.imgur.com/bv8TZLe.png)
 
 ## Installation
 
