@@ -33,7 +33,7 @@ pub fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
 
     let accounts_str = to_aligned_table(&accounts_table);
 
-    println!("{}", accounts_str)
+    print!("{}", accounts_str)
 }
 
 pub fn represent_list_amounts(amount_type: &str,

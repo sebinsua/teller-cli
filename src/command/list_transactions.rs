@@ -39,7 +39,7 @@ fn represent_list_transactions(transactions: &Vec<Transaction>,
 
     let transactions_str = to_aligned_table(&transactions_table);
 
-    println!("{}", transactions_str)
+    print!("{}", transactions_str)
 }
 
 pub fn list_transactions_command(config: &Config,

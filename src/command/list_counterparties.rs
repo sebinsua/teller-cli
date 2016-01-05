@@ -23,7 +23,7 @@ fn represent_list_counterparties(counterparties: &Vec<(String, String)>,
 
     let counterparties_str = to_aligned_table(&counterparties_table);
 
-    println!("{}", counterparties_str)
+    print!("{}", counterparties_str)
 }
 
 pub fn list_counterparties_command(config: &Config,
