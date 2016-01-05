@@ -1,5 +1,6 @@
 use config::Config;
-use client::{Transaction, TransactionsWithCurrrency, TellerClient};
+use api::{Transaction, TellerClient};
+use api::inform::{TransactionsWithCurrrency, GetTransactionsWithCurrency};
 use cli::arg_types::{AccountType, Timeframe};
 
 use super::representations::to_aligned_table;

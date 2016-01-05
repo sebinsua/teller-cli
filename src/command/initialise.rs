@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use config::{Config, get_config_path, get_config_file_to_write, write_config};
 use inquirer::{Question, Answer, ask_question, ask_questions};
 
-use client::TellerClient;
+use api::TellerClient;
 use super::representations::represent_list_accounts;
 
 pub fn configure_cli(config_file_path: &PathBuf) -> Option<Config> {

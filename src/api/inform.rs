@@ -1,61 +1,20 @@
-pub mod error;
-
 use cli::arg_types::{Interval, Timeframe};
 
-use hyper::{Client, Url};
-use hyper::header::{Authorization, Bearer};
-use rustc_serialize::json;
-use chrono::{Date, DateTime, UTC, Datelike};
-use chrono::duration::Duration;
+use chrono::{UTC, Datelike};
 use itertools::Itertools;
 
 use std::collections::HashMap;
 
-use std::io::prelude::*; // Required for read_to_string use later.
-use std::str::FromStr;
+use std::str::FromStr; // Use of #from_str.
 
-use self::error::TellerClientError;
-
-pub type ApiServiceResult<T> = Result<T, TellerClientError>;
+use super::client::{TellerClient, ApiServiceResult, Transaction, Account};
+use super::client::parse_utc_date_from_transaction; // TODO: Ew. bad bad bad.
 
 pub type IntervalAmount = (String, String);
 pub type Balances = HistoricalAmountsWithCurrency;
 pub type Outgoings = HistoricalAmountsWithCurrency;
 pub type Incomings = HistoricalAmountsWithCurrency;
 type DateStringToTransactions = (String, Vec<Transaction>);
-
-#[derive(Debug, RustcDecodable)]
-struct AccountResponse {
-    data: Account,
-}
-
-#[derive(Debug, RustcDecodable)]
-struct AccountsResponse {
-    data: Vec<Account>,
-}
-
-#[derive(Debug, RustcDecodable)]
-struct TransactionsResponse {
-    data: Vec<Transaction>,
-}
-
-#[derive(Debug, RustcDecodable)]
-pub struct Account {
-    pub updated_at: String,
-    pub institution: String,
-    pub id: String,
-    pub currency: String,
-    pub balance: String,
-    pub account_number_last_4: String,
-}
-
-#[derive(Debug, RustcDecodable)]
-pub struct Transaction {
-    pub description: String,
-    pub date: String,
-    pub counterparty: String,
-    pub amount: String,
-}
 
 #[derive(Debug)]
 pub struct HistoricalAmountsWithCurrency {
@@ -132,15 +91,110 @@ impl Money {
     }
 }
 
-fn get_auth_header(auth_token: &str) -> Authorization<Bearer> {
-    Authorization(Bearer { token: auth_token.to_string() })
+pub trait GetAccountBalance {
+    fn get_account_balance(&self, account_id: &str) -> ApiServiceResult<Money>;
 }
 
-fn parse_utc_date_from_transaction(t: &Transaction) -> Date<UTC> {
-    let full_date = &(t.date.to_owned() + "T00:00:00-00:00");
-    let past_transaction_date_without_tz = DateTime::parse_from_rfc3339(full_date).unwrap().date();
-    let past_transaction_date = past_transaction_date_without_tz.with_timezone(&UTC);
-    past_transaction_date
+impl<'a> GetAccountBalance for TellerClient<'a> {
+    fn get_account_balance(&self, account_id: &str) -> ApiServiceResult<Money> {
+        let to_money = |a: Account| Money::new(a.balance, a.currency);
+        self.get_account(&account_id).map(to_money)
+    }
+}
+
+pub trait GetIncoming {
+    fn get_incoming(&self, account_id: &str) -> ApiServiceResult<Money>;
+}
+
+impl<'a> GetIncoming for TellerClient<'a> {
+    fn get_incoming(&self, account_id: &str) -> ApiServiceResult<Money> {
+        let account = try!(self.get_account(&account_id));
+        let currency = account.currency;
+
+        let from = UTC::today().with_day(1).unwrap();
+        let transactions: Vec<Transaction> = self.raw_transactions(&account_id, 250, 1)
+                                                 .unwrap_or(vec![])
+                                                 .into_iter()
+                                                 .filter(|t| {
+                                                     let transaction_date =
+                                                         parse_utc_date_from_transaction(&t);
+                                                     transaction_date > from
+                                                 })
+                                                 .collect();
+
+        let from_float_string_to_cent_integer = |t: &Transaction| {
+            (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
+        };
+        let from_cent_integer_to_float_string = |amount: i64| format!("{:.2}", amount as f64 / 100f64);
+
+        let incoming = transactions.iter()
+                                   .map(from_float_string_to_cent_integer)
+                                   .filter(|ci| *ci > 0)
+                                   .fold(0i64, |sum, v| sum + v);
+
+        Ok(Money::new(from_cent_integer_to_float_string(incoming), currency))
+    }
+}
+
+pub trait GetOutgoing {
+    fn get_outgoing(&self, account_id: &str) -> ApiServiceResult<Money>;
+}
+
+impl<'a> GetOutgoing for TellerClient<'a> {
+    fn get_outgoing(&self, account_id: &str) -> ApiServiceResult<Money> {
+        let account = try!(self.get_account(&account_id));
+        let currency = account.currency;
+
+        let from = UTC::today().with_day(1).unwrap();
+        let transactions: Vec<Transaction> = self.raw_transactions(&account_id, 250, 1)
+                                                 .unwrap_or(vec![])
+                                                 .into_iter()
+                                                 .filter(|t| {
+                                                     let transaction_date =
+                                                         parse_utc_date_from_transaction(&t);
+                                                     transaction_date > from
+                                                 })
+                                                 .collect();
+
+        let from_float_string_to_cent_integer = |t: &Transaction| {
+            (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
+        };
+        let from_cent_integer_to_float_string = |amount: i64| format!("{:.2}", amount as f64 / 100f64);
+
+        let outgoing = transactions.iter()
+                                   .map(from_float_string_to_cent_integer)
+                                   .filter(|ci| *ci < 0)
+                                   .fold(0i64, |sum, v| sum + v);
+
+        Ok(Money::new(from_cent_integer_to_float_string(outgoing.abs()), currency))
+    }
+}
+
+pub trait GetTransactionsWithCurrency {
+    fn get_transactions_with_currency(&self,
+                                          account_id: &str,
+                                          timeframe: &Timeframe)
+                                          -> ApiServiceResult<TransactionsWithCurrrency>;
+}
+
+impl<'a> GetTransactionsWithCurrency for TellerClient<'a> {
+    fn get_transactions_with_currency(&self,
+                                          account_id: &str,
+                                          timeframe: &Timeframe)
+                                          -> ApiServiceResult<TransactionsWithCurrrency> {
+        let transactions = try!(self.get_transactions(&account_id, &timeframe));
+
+        let account = try!(self.get_account(&account_id));
+        let currency = account.currency;
+
+        Ok(TransactionsWithCurrrency::new(transactions, currency))
+    }
+}
+
+pub trait GetCounterparties {
+    fn get_counterparties(&self,
+                          account_id: &str,
+                          timeframe: &Timeframe) -> ApiServiceResult<CounterpartiesWithCurrrency>;
 }
 
 fn convert_to_counterparty_to_date_amount_list<'a>(transactions: &'a Vec<Transaction>)
@@ -172,152 +226,8 @@ fn convert_to_counterparty_to_date_amount_list<'a>(transactions: &'a Vec<Transac
     })
 }
 
-const TELLER_API_SERVER_URL: &'static str = "https://api.teller.io";
-
-pub struct TellerClient<'a> {
-    auth_token: &'a str,
-}
-
-impl<'a> TellerClient<'a> {
-    pub fn new(auth_token: &'a str) -> TellerClient {
-        TellerClient {
-            auth_token: auth_token,
-        }
-    }
-
-    fn get_body(&self, url: &str) -> ApiServiceResult<String> {
-        let client = Client::new();
-        let mut res = try!(client.get(url)
-                                 .header(get_auth_header(&self.auth_token))
-                                 .send());
-        if res.status.is_client_error() {
-            return Err(TellerClientError::AuthenticationError);
-        }
-
-        let mut body = String::new();
-        try!(res.read_to_string(&mut body));
-
-        debug!("GET {} response: {}", url, body);
-
-        Ok(body)
-    }
-
-    pub fn get_accounts(&self) -> ApiServiceResult<Vec<Account>> {
-        let body = try!(self.get_body(&format!("{}/accounts", TELLER_API_SERVER_URL)));
-        let accounts_response: AccountsResponse = try!(json::decode(&body));
-
-        Ok(accounts_response.data)
-    }
-
-    pub fn get_account(&self, account_id: &str) -> ApiServiceResult<Account> {
-        let body = try!(self.get_body(&format!("{}/accounts/{}", TELLER_API_SERVER_URL, account_id)));
-        let account_response: AccountResponse = try!(json::decode(&body));
-
-        Ok(account_response.data)
-    }
-
-    // TODO: INFORM: Move elsewhere.
-    pub fn get_account_balance(&self, account_id: &str) -> ApiServiceResult<Money> {
-        let to_money = |a: Account| Money::new(a.balance, a.currency);
-        self.get_account(&account_id).map(to_money)
-    }
-
-    pub fn raw_transactions(&self,
-                            account_id: &str,
-                            count: u32,
-                            page: u32)
-                            -> ApiServiceResult<Vec<Transaction>> {
-        let mut url = Url::parse(&format!("{}/accounts/{}/transactions",
-                                          TELLER_API_SERVER_URL,
-                                          account_id)).unwrap();
-
-        const COUNT: &'static str = "count";
-        const PAGE: &'static str = "page";
-        let query = vec![(COUNT, count.to_string()), (PAGE, page.to_string())];
-        url.set_query_from_pairs(query.into_iter());
-
-        let body = try!(self.get_body(&url.serialize()));
-        let transactions_response: TransactionsResponse = try!(json::decode(&body));
-
-        Ok(transactions_response.data)
-    }
-
-    pub fn get_transactions(&self,
-                            account_id: &str,
-                            timeframe: &Timeframe)
-                            -> ApiServiceResult<Vec<Transaction>> {
-        let page_through_transactions = |from| -> ApiServiceResult<Vec<Transaction>> {
-            let mut all_transactions = vec![];
-
-            let mut fetching = true;
-            let mut page = 1;
-            let count = 250;
-            while fetching {
-                let mut transactions = try!(self.raw_transactions(&account_id, count, page));
-                match transactions.last() {
-                    None => {
-                        // If there are no transactions left, do not fetch forever...
-                        fetching = false
-                    }
-                    Some(past_transaction) => {
-                        let past_transaction_date = parse_utc_date_from_transaction(&past_transaction);
-                        if past_transaction_date < from {
-                            fetching = false;
-                        }
-                    }
-                };
-
-                all_transactions.append(&mut transactions);
-                page = page + 1;
-            }
-
-            all_transactions = all_transactions.into_iter()
-                                               .filter(|t| {
-                                                   let transaction_date =
-                                                       parse_utc_date_from_transaction(&t);
-                                                   transaction_date > from
-                                               })
-                                               .collect();
-
-            all_transactions.reverse();
-            Ok(all_transactions)
-        };
-
-        match *timeframe {
-            Timeframe::ThreeMonths => {
-                let to = UTC::today();
-                let from = to - Duration::days(91); // close enough... 😅
-
-                page_through_transactions(from)
-            }
-            Timeframe::SixMonths => {
-                let to = UTC::today();
-                let from = to - Duration::days(183);
-
-                page_through_transactions(from)
-            }
-            Timeframe::Year => {
-                let to = UTC::today();
-                let from = to - Duration::days(365);
-
-                page_through_transactions(from)
-            }
-        }
-    }
-
-    pub fn get_transactions_with_currency(&self,
-                                          account_id: &str,
-                                          timeframe: &Timeframe)
-                                          -> ApiServiceResult<TransactionsWithCurrrency> {
-        let transactions = try!(self.get_transactions(&account_id, &timeframe));
-
-        let account = try!(self.get_account(&account_id));
-        let currency = account.currency;
-
-        Ok(TransactionsWithCurrrency::new(transactions, currency))
-    }
-
-    pub fn get_counterparties(&self,
+impl<'a> GetCounterparties for TellerClient<'a> {
+    fn get_counterparties(&self,
                               account_id: &str,
                               timeframe: &Timeframe)
                               -> ApiServiceResult<CounterpartiesWithCurrrency> {
@@ -361,7 +271,34 @@ impl<'a> TellerClient<'a> {
 
         Ok(CounterpartiesWithCurrrency::new(counterparties, currency))
     }
+}
 
+// TODO: Break this up into multiple modules.
+pub trait GetAggregates {
+    fn get_grouped_transaction_aggregates(&self,
+                                          account_id: &str,
+                                          interval: &Interval,
+                                          timeframe: &Timeframe,
+                                          aggregate_txs: &Fn(DateStringToTransactions) -> (String, i64))
+                                          -> ApiServiceResult<Vec<(String, i64)>>;
+
+    fn get_balances(&self,
+                    account_id: &str,
+                    interval: &Interval,
+                    timeframe: &Timeframe) -> ApiServiceResult<Balances>;
+
+    fn get_outgoings(&self,
+                     account_id: &str,
+                     interval: &Interval,
+                     timeframe: &Timeframe) -> ApiServiceResult<Outgoings>;
+
+    fn get_incomings(&self,
+                     account_id: &str,
+                     interval: &Interval,
+                     timeframe: &Timeframe) -> ApiServiceResult<Incomings>;
+}
+
+impl<'a> GetAggregates for TellerClient<'a> {
     fn get_grouped_transaction_aggregates(&self,
                                           account_id: &str,
                                           interval: &Interval,
@@ -389,7 +326,7 @@ impl<'a> TellerClient<'a> {
         Ok(month_year_grouped_transactions)
     }
 
-    pub fn get_balances(&self,
+    fn get_balances(&self,
                         account_id: &str,
                         interval: &Interval,
                         timeframe: &Timeframe)
@@ -428,7 +365,7 @@ impl<'a> TellerClient<'a> {
         Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
     }
 
-    pub fn get_outgoings(&self,
+    fn get_outgoings(&self,
                          account_id: &str,
                          interval: &Interval,
                          timeframe: &Timeframe)
@@ -467,7 +404,7 @@ impl<'a> TellerClient<'a> {
         Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
     }
 
-    pub fn get_incomings(&self,
+    fn get_incomings(&self,
                          account_id: &str,
                          interval: &Interval,
                          timeframe: &Timeframe)
@@ -504,62 +441,6 @@ impl<'a> TellerClient<'a> {
         historical_amounts.reverse();
 
         Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
-    }
-
-    pub fn get_outgoing(&self, account_id: &str) -> ApiServiceResult<Money> {
-        let account = try!(self.get_account(&account_id));
-        let currency = account.currency;
-
-        let from = UTC::today().with_day(1).unwrap();
-        let transactions: Vec<Transaction> = self.raw_transactions(&account_id, 250, 1)
-                                                 .unwrap_or(vec![])
-                                                 .into_iter()
-                                                 .filter(|t| {
-                                                     let transaction_date =
-                                                         parse_utc_date_from_transaction(&t);
-                                                     transaction_date > from
-                                                 })
-                                                 .collect();
-
-        let from_float_string_to_cent_integer = |t: &Transaction| {
-            (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
-        };
-        let from_cent_integer_to_float_string = |amount: i64| format!("{:.2}", amount as f64 / 100f64);
-
-        let outgoing = transactions.iter()
-                                   .map(from_float_string_to_cent_integer)
-                                   .filter(|ci| *ci < 0)
-                                   .fold(0i64, |sum, v| sum + v);
-
-        Ok(Money::new(from_cent_integer_to_float_string(outgoing.abs()), currency))
-    }
-
-    pub fn get_incoming(&self, account_id: &str) -> ApiServiceResult<Money> {
-        let account = try!(self.get_account(&account_id));
-        let currency = account.currency;
-
-        let from = UTC::today().with_day(1).unwrap();
-        let transactions: Vec<Transaction> = self.raw_transactions(&account_id, 250, 1)
-                                                 .unwrap_or(vec![])
-                                                 .into_iter()
-                                                 .filter(|t| {
-                                                     let transaction_date =
-                                                         parse_utc_date_from_transaction(&t);
-                                                     transaction_date > from
-                                                 })
-                                                 .collect();
-
-        let from_float_string_to_cent_integer = |t: &Transaction| {
-            (f64::from_str(&t.amount).unwrap() * 100f64).round() as i64
-        };
-        let from_cent_integer_to_float_string = |amount: i64| format!("{:.2}", amount as f64 / 100f64);
-
-        let incoming = transactions.iter()
-                                   .map(from_float_string_to_cent_integer)
-                                   .filter(|ci| *ci > 0)
-                                   .fold(0i64, |sum, v| sum + v);
-
-        Ok(Money::new(from_cent_integer_to_float_string(incoming), currency))
     }
 
 }

@@ -1,7 +1,7 @@
-use client::TellerClient;
+use api::TellerClient;
+use api::inform::{Money, GetAccountBalance};
 use config::Config;
 use cli::arg_types::AccountType;
-use client::Money;
 
 fn represent_money(money_with_currency: &Money, hide_currency: &bool) {
     println!("{}",

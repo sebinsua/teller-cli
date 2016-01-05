@@ -13,7 +13,7 @@ mod cli;
 mod command;
 mod config;
 mod inquirer;
-mod client;
+mod api;
 
 use docopt::Docopt;
 use cli::get_command_type;

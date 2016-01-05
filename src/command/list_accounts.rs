@@ -1,5 +1,5 @@
 use config::Config;
-use client::TellerClient;
+use api::TellerClient;
 
 use super::representations::represent_list_accounts;
 

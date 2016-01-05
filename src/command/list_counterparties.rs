@@ -1,5 +1,6 @@
 use config::Config;
-use client::TellerClient;
+use api::TellerClient;
+use api::inform::GetCounterparties;
 use cli::arg_types::{AccountType, Timeframe};
 
 use super::representations::to_aligned_table;

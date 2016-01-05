@@ -2,7 +2,7 @@ use std::io::Write;
 use tabwriter::TabWriter;
 
 use config::Config;
-use client::{HistoricalAmountsWithCurrency, Account};
+use api::{HistoricalAmountsWithCurrency, Account};
 use cli::arg_types::OutputFormat;
 
 pub fn to_aligned_table(table_str: &str) -> String {
