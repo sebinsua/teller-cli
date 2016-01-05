@@ -8,7 +8,7 @@ use chrono::duration::Duration;
 
 use std::io::prelude::*; // Required for read_to_string use later.
 
-use super::error::TellerClientError;
+use api::error::TellerClientError;
 
 pub type ApiServiceResult<T> = Result<T, TellerClientError>;
 

@@ -1,6 +1,6 @@
 use rustc_serialize::{Decodable, Decoder};
 
-use super::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
+use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
 #[derive(Debug, RustcDecodable)]
 pub struct CliArgs {

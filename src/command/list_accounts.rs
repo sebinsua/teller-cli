@@ -1,7 +1,7 @@
 use config::Config;
 use api::TellerClient;
 
-use super::representations::represent_list_accounts;
+use command::representations::represent_list_accounts;
 
 pub fn list_accounts_command(config: &Config) -> i32 {
     info!("Calling the list accounts command");

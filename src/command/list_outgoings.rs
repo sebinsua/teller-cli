@@ -3,7 +3,7 @@ use api::TellerClient;
 use api::inform::{Outgoings, GetOutgoings};
 use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
-use super::representations::represent_list_amounts;
+use command::representations::represent_list_amounts;
 
 fn represent_list_outgoings(hac: &Outgoings, output: &OutputFormat) {
     represent_list_amounts("outgoing", &hac, &output)

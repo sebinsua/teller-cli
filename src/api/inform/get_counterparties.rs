@@ -5,7 +5,7 @@ use std::str::FromStr; // Use of #from_str.
 use std::collections::HashMap;
 use itertools::Itertools;
 
-use super::{TellerClient, ApiServiceResult, Transaction};
+use api::client::{TellerClient, ApiServiceResult, Transaction};
 
 #[derive(Debug)]
 pub struct CounterpartiesWithCurrrency {

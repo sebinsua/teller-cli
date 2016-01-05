@@ -4,8 +4,8 @@ use std::str::FromStr; // Use of #from_str.
 
 use itertools::Itertools;
 
-use super::{TellerClient, ApiServiceResult, Transaction};
-use super::parse_utc_date_from_transaction;
+use api::client::{TellerClient, ApiServiceResult, Transaction};
+use api::client::parse_utc_date_from_transaction;
 
 pub type Balances = HistoricalAmountsWithCurrency;
 pub type Outgoings = HistoricalAmountsWithCurrency;

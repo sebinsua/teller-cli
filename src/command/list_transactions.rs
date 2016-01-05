@@ -3,7 +3,7 @@ use api::{Transaction, TellerClient};
 use api::inform::{TransactionsWithCurrrency, GetTransactionsWithCurrency};
 use cli::arg_types::{AccountType, Timeframe};
 
-use super::representations::to_aligned_table;
+use command::representations::to_aligned_table;
 
 fn represent_list_transactions(transactions: &Vec<Transaction>,
                                currency: &str,

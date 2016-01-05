@@ -3,7 +3,7 @@ use api::TellerClient;
 use api::inform::GetCounterparties;
 use cli::arg_types::{AccountType, Timeframe};
 
-use super::representations::to_aligned_table;
+use command::representations::to_aligned_table;
 
 fn represent_list_counterparties(counterparties: &Vec<(String, String)>,
                                  currency: &str,

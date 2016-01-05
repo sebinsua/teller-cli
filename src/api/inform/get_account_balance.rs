@@ -1,4 +1,5 @@
-use super::{TellerClient, ApiServiceResult, Account, Money};
+use api::client::{TellerClient, ApiServiceResult, Account};
+use api::inform::Money;
 
 pub trait GetAccountBalance {
     fn get_account_balance(&self, account_id: &str) -> ApiServiceResult<Money>;

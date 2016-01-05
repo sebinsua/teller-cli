@@ -1,6 +1,6 @@
 use cli::arg_types::Timeframe;
 
-use super::{TellerClient, ApiServiceResult, Transaction};
+use api::client::{TellerClient, ApiServiceResult, Transaction};
 
 #[derive(Debug)]
 pub struct TransactionsWithCurrrency {

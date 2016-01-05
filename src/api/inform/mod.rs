@@ -5,8 +5,7 @@ pub mod get_transactions_with_currency;
 pub mod get_counterparties;
 pub mod get_aggregates;
 
-pub use super::client::{TellerClient, ApiServiceResult, Transaction, Account};
-pub use super::client::parse_utc_date_from_transaction;
+pub use api::client::{TellerClient, ApiServiceResult, Transaction, Account};
 
 pub use self::get_account_balance::*;
 pub use self::get_incoming::*;

@@ -2,8 +2,9 @@ use chrono::{UTC, Datelike};
 
 use std::str::FromStr; // Use of #from_str.
 
-use super::{TellerClient, ApiServiceResult, Transaction, Money};
-use super::parse_utc_date_from_transaction;
+use api::client::{TellerClient, ApiServiceResult, Transaction};
+use api::client::parse_utc_date_from_transaction;
+use api::inform::Money;
 
 pub trait GetIncoming {
     fn get_incoming(&self, account_id: &str) -> ApiServiceResult<Money>;
