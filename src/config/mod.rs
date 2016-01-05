@@ -11,6 +11,8 @@ use std::io::prelude::*; // Required for read_to_string use later.
 
 use self::error::ConfigError;
 
+use cli::arg_types::AccountType;
+
 #[derive(Debug, RustcEncodable, RustcDecodable)]
 pub struct Config {
     pub auth_token: String,
@@ -30,12 +32,32 @@ impl Config {
     }
 
     pub fn new_with_auth_token_only<S: Into<String>>(auth_token: S) -> Config {
-        Config::new(
-            auth_token.into(),
-            "".to_string(),
-            "".to_string(),
-            "".to_string(),
-        )
+        Config::new(auth_token.into(),
+                    "".to_string(),
+                    "".to_string(),
+                    "".to_string())
+    }
+
+    pub fn get_account_id(&self, account: &AccountType) -> String {
+        let default_account_id = self.current.to_owned();
+        match *account {
+            AccountType::Current => self.current.to_owned(),
+            AccountType::Savings => self.savings.to_owned(),
+            AccountType::Business => self.business.to_owned(),
+            _ => default_account_id,
+        }
+    }
+
+    pub fn get_account_alias_for_id<'a>(&self, account_id: &str) -> &'a str {
+        if *account_id == self.current {
+            "(current)"
+        } else if *account_id == self.savings {
+            "(savings)"
+        } else if *account_id == self.business {
+            "(business)"
+        } else {
+            ""
+        }
     }
 }
 
@@ -49,13 +71,15 @@ pub fn get_config_path() -> PathBuf {
 }
 
 pub fn get_config_file(config_path: &PathBuf) -> Option<File> {
-    info!("Checking whether config file within {} exists", config_path.to_str().unwrap());
+    let config_path_str = config_path.to_str().unwrap_or("[error: config_path#to_str fails]");
+    info!("Checking whether config file within {} exists",
+          config_path_str);
     let config_file = File::open(&config_path);
     match config_file {
         Err(ref e) if ErrorKind::NotFound == e.kind() => {
-            debug!("no config file found");
+            debug!("No config file found");
             None
-        },
+        }
         Err(_) => panic!("Unable to read config!"),
         Ok(config_file) => Some(config_file),
     }
@@ -64,8 +88,27 @@ pub fn get_config_file(config_path: &PathBuf) -> Option<File> {
 pub fn get_config_file_to_write(config_path: &PathBuf) -> Result<File, StdIoError> {
     let config_file = File::create(&config_path);
     match config_file {
-        Err(ref e) if ErrorKind::PermissionDenied == e.kind() => panic!("Permission to read config denied"),
+        Err(ref e) if ErrorKind::PermissionDenied == e.kind() => {
+            panic!("Permission to read config denied")
+        }
         _ => config_file,
+    }
+}
+
+pub fn get_config() -> Option<Config> {
+    let config_file_path = get_config_path();
+    match get_config_file(&config_file_path) {
+        None => None,
+        Some(mut config_file) => {
+            match read_config(&mut config_file) {
+                Ok(config) => Some(config),
+                Err(e) => {
+                    panic!("ERROR: attempting to read file {}: {}",
+                           config_file_path.display(),
+                           e)
+                }
+            }
+        }
     }
 }
 
