@@ -3,7 +3,7 @@
 
 This tool provides useful ways of interrogating your bank through your command line, and is not merely meant to be a one-to-one match with underlying APIs.
 
-It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there.
+It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there. Want an account? [@stevegraham can hook you up!](https://twitter.com/stevegraham)
 
 **:point_up_2: Heads up!** (1) This is my first [Rust](https://www.rust-lang.org/) project, (2) the interface is in flux while I try to make it human-like without ending up redundant, and (3) there are [no tests yet](https://github.com/sebinsua/teller-cli/issues/1)!
 
@@ -81,6 +81,23 @@ then
   echo "You've spent £$DIFFERENCE_OUTGOING more than normal." | terminal-notifier -title "💰 Spending Alert" -subtitle "Current Outgoing is £$CURRENT_OUTGOING";
 fi
 ```
+
+#### Show your current balance and last transaction in the OSX Menu Bar with [Bitbar](https://github.com/matryer/bitbar)
+
+`show-current-balance.1h.sh`
+```sh
+#!/bin/sh
+export PATH='/usr/local/bin:/usr/bin/:$PATH';                    
+
+CURRENT_BALANCE=`teller show balance current --hide-currency`;
+LAST_TRANSACTION=`teller list transactions | tail -n 1 | pcregrep -o1 "[0-9]+[ ]+(.*)"`;
+
+echo "£$CURRENT_BALANCE";
+echo "---";
+echo "$LAST_TRANSACTION";
+```
+
+![Current Balance in OSX Menu Bar](http://i.imgur.com/BzkazSB.png)
 
 ## Installation
 
