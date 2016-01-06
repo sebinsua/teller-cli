@@ -82,7 +82,7 @@ then
 fi
 ```
 
-#### Keep track of your spending from the OSX Menu Bar with [Bitbar](https://github.com/matryer/bitbar)
+#### Keep track of your spending from the OSX Menu Bar with [BitBar](https://github.com/matryer/bitbar)
 
 Create a `track-spending.1h.sh` within your plugins directory:
 ```sh
