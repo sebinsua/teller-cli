@@ -89,6 +89,14 @@ Create a `track-spending.1h.sh` within your plugins directory:
 #!/bin/sh
 export PATH='/usr/local/bin:/usr/bin/:$PATH';
 
+# If we're offline we shouldn't output junk in the menu bar.
+curl --connect-timeout 5 www.google.com > /dev/null 2> /dev/null;
+ONLINE=$?;
+if [[ $ONLINE -ne 0 ]]; then
+  echo "Offline|color=#7e7e7e";
+  exit 1;
+fi;
+
 SPENDING_LIMIT='2000.00'; # Change this to a suitable spending limit.
 
 CURRENT_OUTGOING=`teller show outgoing current --hide-currency`;
