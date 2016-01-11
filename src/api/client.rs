@@ -80,7 +80,8 @@ impl<'a> TellerClient<'a> {
         let mut body = String::new();
         try!(res.read_to_string(&mut body));
 
-        debug!("GET {} response: {}", url, body);
+        info!("GET {}", url);
+        debug!("Response: {}", body);
 
         Ok(body)
     }
