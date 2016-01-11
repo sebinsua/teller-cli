@@ -89,19 +89,32 @@ Create a `track-spending.1h.sh` within your plugins directory:
 #!/bin/sh
 export PATH='/usr/local/bin:/usr/bin/:$PATH';
 
-# If we're offline we shouldn't output junk in the menu bar.
-curl --connect-timeout 5 www.google.com > /dev/null 2> /dev/null;
-ONLINE=$?;
-if [[ $ONLINE -ne 0 ]]; then
-  echo "Offline|color=#7e7e7e";
-  exit 1;
-fi;
-
 SPENDING_LIMIT='2000.00'; # Change this to a suitable spending limit.
 
+exit_if_zero() {
+  RETURN_CODE=$1;
+  ERROR_MESSAGE=$2;
+  if [ $ERROR_MESSAGE = "" ]; then
+    ERROR_MESSAGE="Offline";
+  fi;
+  if [[ $RETURN_CODE -ne 0 ]]; then
+    echo "$ERROR_MESSAGE|color=#7e7e7e";
+    exit 1;
+  fi;
+}
+
+# If we're offline we shouldn't output junk in the menu bar.
+curl --connect-timeout 5 www.google.com > /dev/null 2> /dev/null;
+exit_if_zero $? "Offline";
+
 CURRENT_OUTGOING=`teller show outgoing current --hide-currency`;
+exit_if_zero $? "Error";
+
 CURRENT_BALANCE=`teller show balance current --hide-currency`;
+exit_if_zero $? "Error";
+
 LAST_TRANSACTION=`teller list transactions | tail -n 1 | pcregrep -o1 "[0-9]+[ ]+(.*)"`;
+exit_if_zero $? "Error";
 
 if (( $(bc <<< "$CURRENT_OUTGOING > $SPENDING_LIMIT") ))
 then
