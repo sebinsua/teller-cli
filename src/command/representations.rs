@@ -18,13 +18,14 @@ pub fn to_aligned_table(table_str: &str) -> String {
 
 pub fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
     let mut accounts_table = String::new();
-    accounts_table.push_str("row\taccount no.\tbalance\n");
+    accounts_table.push_str("row\tname\taccount no.\tbalance\n");
     for (idx, account) in accounts.iter().enumerate() {
         let row_number = (idx + 1) as u32;
         let account_alias = config.get_account_alias_for_id(&account.id);
-        let new_account_row = format!("{} {}\t****{}\t{}\t{}\n",
+        let new_account_row = format!("{} {}\t{}\t****{}\t{}\t{}\n",
                                       row_number,
                                       account_alias,
+                                      account.name,
                                       account.account_number_last_4,
                                       account.balance,
                                       account.currency);

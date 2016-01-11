@@ -29,10 +29,11 @@ struct TransactionsResponse {
 
 #[derive(Debug, RustcDecodable)]
 pub struct Account {
-    pub updated_at: String,
+    pub name: String,
     pub institution: String,
     pub id: String,
     pub currency: String,
+    pub bank_code: String,
     pub balance: String,
     pub account_number_last_4: String,
 }

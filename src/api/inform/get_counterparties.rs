@@ -32,23 +32,22 @@ pub trait GetCounterparties {
 
 fn convert_to_counterparty_to_date_amount_list<'a>(transactions: &'a Vec<Transaction>)
                                                    -> HashMap<String, Vec<(String, String)>> {
-    let grouped_counterparties = transactions.iter()
-                                             .fold(HashMap::new(), |mut acc: HashMap<String,
-                                                                     Vec<&'a Transaction>>,
-                                                    t: &'a Transaction| {
-                                                 let counterparty = t.counterparty.to_owned();
-                                                 if acc.contains_key(&counterparty) {
-                                                     if let Some(txs) = acc.get_mut(&counterparty) {
-                                                         txs.push(t);
-                                                     }
-                                                 } else {
-                                                     let mut txs: Vec<&'a Transaction> = vec![];
-                                                     txs.push(t);
-                                                     acc.insert(counterparty, txs);
-                                                 }
+    let grouped_counterparties = transactions
+        .iter()
+        .fold(HashMap::new(), |mut acc: HashMap<String, Vec<&'a Transaction>>, t: &'a Transaction| {
+            let counterparty = t.counterparty.to_owned();
+            if acc.contains_key(&counterparty) {
+                if let Some(txs) = acc.get_mut(&counterparty) {
+                    txs.push(t);
+                }
+            } else {
+                let mut txs: Vec<&'a Transaction> = vec![];
+                txs.push(t);
+                acc.insert(counterparty, txs);
+            }
 
-                                                 acc
-                                             });
+            acc
+        });
 
     grouped_counterparties.into_iter().fold(HashMap::new(), |mut acc, (counterparty, txs)| {
         let date_amount_tuples = txs.into_iter()
