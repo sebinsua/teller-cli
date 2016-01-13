@@ -84,12 +84,14 @@ fi
 
 #### Keep track of your spending from the OSX Menu Bar with [BitBar](https://github.com/matryer/bitbar)
 
-Create a `track-spending.1h.sh` within your plugins directory:
+Create a [`track-spending.1h.sh`](https://github.com/matryer/bitbar-plugins/blob/master/Finance/teller-track-spending.1h.sh) within your plugins directory:
 ```sh
 #!/bin/sh
 #
-# Teller.io Banking in the OSX menu bar
+# Teller.io Banking via the OSX menu bar
 # Requires:
+# - a Teller.io account
+# - a UK Bank
 # - teller-cli: https://github.com/sebinsua/teller-cli#from-release
 # - pcregrep: `brew install pcre`
 #
