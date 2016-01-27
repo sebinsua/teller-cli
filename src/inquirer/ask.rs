@@ -1,4 +1,4 @@
-use std::io::{BufRead, Write};
+use std::io::{self, BufRead, Write};
 
 #[derive(Debug)]
 pub struct Question {
@@ -34,7 +34,7 @@ impl Answer {
     }
 }
 
-pub fn ask_question<R, W>(reader: &mut R, mut writer: &mut W, question: &Question) -> Option<Answer>
+pub fn raw_ask_question<R, W>(reader: &mut R, mut writer: &mut W, question: &Question) -> Option<Answer>
     where R: BufRead,
           W: Write {
     write!(&mut writer, "{}\n", question.message).unwrap();
@@ -53,14 +53,28 @@ pub fn ask_question<R, W>(reader: &mut R, mut writer: &mut W, question: &Questio
     }
 }
 
-pub fn ask_questions<R, W>(reader: &mut R, writer: &mut W, questions: &Vec<Question>) -> Vec<Answer>
+pub fn raw_ask_questions<R, W>(reader: &mut R, writer: &mut W, questions: &Vec<Question>) -> Vec<Answer>
     where R: BufRead,
           W: Write {
     let non_empty_answers: Vec<Answer> = questions.iter().filter_map(|question| {
-        ask_question(reader, writer, &question)
+        raw_ask_question(reader, writer, &question)
     }).collect();
 
     non_empty_answers
+}
+
+pub fn ask_question(question: &Question) -> Option<Answer> {
+    let stdin = io::stdin();
+    let mut reader = stdin.lock(); // A locked stdin implements BufRead.
+    let mut writer = io::stdout();
+    raw_ask_question(&mut reader, &mut writer, &question)
+}
+
+pub fn ask_questions(questions: &Vec<Question>) -> Vec<Answer> {
+    let stdin = io::stdin();
+    let mut reader = stdin.lock(); // A locked stdin implements BufRead.
+    let mut writer = io::stdout();
+    raw_ask_questions(&mut reader, &mut writer, &questions)
 }
 
 #[cfg(test)]
@@ -70,7 +84,7 @@ mod tests {
 
     use std::io::Cursor;
     use std::str::from_utf8;
-    use super::{ask_question, ask_questions};
+    use super::{raw_ask_question, raw_ask_questions};
 
     #[test]
     fn can_instantiate_question() {
@@ -105,7 +119,7 @@ mod tests {
 
        let question = Question::new("test-question", "What's your name?");
 
-       let answer = ask_question(&mut reader, &mut writer, &question).unwrap();
+       let answer = raw_ask_question(&mut reader, &mut writer, &question).unwrap();
 
        assert_eq!(question.name, answer.name);
        assert_eq!("Sebastian", answer.value);
@@ -119,7 +133,7 @@ mod tests {
 
        let question = Question::new("test-question", "What's your name?");
 
-       let answer = ask_question(&mut reader, &mut writer, &question);
+       let answer = raw_ask_question(&mut reader, &mut writer, &question);
 
        assert_eq!(true, answer.is_none());
    }
@@ -144,7 +158,7 @@ mod tests {
           ),
       ];
 
-      let answers = ask_questions(&mut reader, &mut writer, &questions);
+      let answers = raw_ask_questions(&mut reader, &mut writer, &questions);
 
       assert_eq!(questions[0].name, answers[0].name);
       assert_eq!(questions[1].name, answers[1].name);
