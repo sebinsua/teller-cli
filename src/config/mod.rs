@@ -135,6 +135,12 @@ pub fn write_config(config_file: &mut File, config: &Config) -> Result<(), Confi
 mod tests {
     use super::Config;
 
+    use cli::arg_types::AccountType;
+
+    use std::env;
+    use std::path::PathBuf;
+    use super::get_config_path;
+
     #[test]
     fn can_instantiate_config() {
         let expected_auth_token = "fake-auth-token";
@@ -149,5 +155,44 @@ mod tests {
         assert_eq!(expected_savings, config.savings);
         assert_eq!(expected_business, config.business);
     }
-    
+
+    #[test]
+    fn can_get_account_id_from_config() {
+        let expected_auth_token = "fake-auth-token";
+        let expected_current = "current-id";
+        let expected_savings = "savings-id";
+        let expected_business = "business-id";
+
+        let config = Config::new(expected_auth_token, expected_current, expected_savings, expected_business);
+
+        assert_eq!("savings-id", config.get_account_id(&AccountType::Savings));
+    }
+
+    #[test]
+    fn can_get_account_alias_from_config() {
+        let expected_auth_token = "fake-auth-token";
+        let expected_current = "current-id";
+        let expected_savings = "savings-id";
+        let expected_business = "business-id";
+
+        let config = Config::new(expected_auth_token, expected_current, expected_savings, expected_business);
+
+        assert_eq!("(savings)", config.get_account_alias_for_id(&expected_savings));
+    }
+
+    // test:
+    //
+    // read_config: Read trait
+    // write_config: Write trait
+    //
+    // get_config_file and get_config_file_to_write can't be tested afaik.
+    // get_config: looks like it's not possible to test without get_config_file.
+
+    #[test]
+    fn can_get_config_path() {
+        let config_path = get_config_path();
+        let home_dir = env::home_dir().unwrap_or(PathBuf::from("."));
+        assert_eq!(format!("{}/.tellerrc", home_dir.display()), config_path.to_str().unwrap());
+    }
+
 }
