@@ -37,3 +37,33 @@ impl Money {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Money;
+
+    #[test]
+    fn can_instantiate_money() {
+        let expected_amount = "10.00";
+        let expected_currency = "GBP";
+
+        let money = Money::new(expected_amount, expected_currency);
+
+        assert_eq!(expected_amount, money.amount);
+        assert_eq!(expected_currency, money.currency);
+    }
+
+    #[test]
+    fn given_money_get_balance_for_display() {
+        let amount = "10.00";
+        let currency = "GBP";
+
+        let money = Money::new(amount, currency);
+
+        let money_with_currency = money.get_balance_for_display(&false);
+        let money_without_currency = money.get_balance_for_display(&true);
+
+        assert_eq!(format!("{} {}", amount, currency), money_with_currency);
+        assert_eq!(amount, money_without_currency);
+    }
+}

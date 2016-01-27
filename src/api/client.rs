@@ -184,3 +184,43 @@ impl<'a> TellerClient<'a> {
     }
 
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{TellerClient, Account, Transaction};
+
+    #[test]
+    #[allow(unused)]
+    fn can_instantiate_teller_client() {
+        let client = TellerClient::new("auth_token");
+        assert!(true);
+    }
+
+    #[test]
+    #[allow(unused)]
+    fn can_instantiate_account() {
+        let account = Account {
+            name: "Current Account".to_string(),
+            institution: "Natwest".to_string(),
+            id: "some-long-uuid".to_string(),
+            currency: "GBP".to_string(),
+            bank_code: "00000000".to_string(),
+            balance: "1000.00".to_string(),
+            account_number_last_4: "0000".to_string(),
+        };
+        assert!(true);
+    }
+
+    #[test]
+    #[allow(unused)]
+    fn can_instantiate_transaction() {
+        let transaction = Transaction {
+            description: "4836 19JAN16 C , NANNA'S , LONDON GB".to_string(),
+            date: "2016-01-21".to_string(),
+            counterparty: "NANNA'S".to_string(),
+            amount: "-10.00".to_string(),
+        };
+        assert!(true);
+    }
+
+}
