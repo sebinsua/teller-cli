@@ -130,3 +130,24 @@ pub fn write_config(config_file: &mut File, config: &Config) -> Result<(), Confi
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Config;
+
+    #[test]
+    fn can_instantiate_config() {
+        let expected_auth_token = "fake-auth-token";
+        let expected_current = "current-id";
+        let expected_savings = "savings-id";
+        let expected_business = "business-id";
+
+        let config = Config::new(expected_auth_token, expected_current, expected_savings, expected_business);
+
+        assert_eq!(expected_auth_token, config.auth_token);
+        assert_eq!(expected_current, config.current);
+        assert_eq!(expected_savings, config.savings);
+        assert_eq!(expected_business, config.business);
+    }
+    
+}
