@@ -65,7 +65,7 @@ mod tests {
 
     use std::io::Cursor;
     use std::str::from_utf8;
-    use super::ask_question;
+    use super::{ask_question, ask_questions};
 
     #[test]
     fn can_instantiate_question() {
@@ -95,7 +95,7 @@ mod tests {
 
     #[test]
     fn can_ask_question() {
-       let mut reader = Cursor::new(&b"Sebastian"[..]);
+       let mut reader = Cursor::new(&b"Sebastian\n"[..]);
        let mut writer = Cursor::new(Vec::new());
 
        let question = Question::new("test-question", "What's your name?");
@@ -106,4 +106,37 @@ mod tests {
        assert_eq!("Sebastian", answer.value);
        assert_eq!("What's your name?\n", from_utf8(writer.get_ref()).unwrap());
    }
+
+   #[test]
+   fn can_ask_questions() {
+      let mut reader = Cursor::new(&b"First Answer\nSecond Answer\nThird Answer\n"[..]);
+      let mut writer = Cursor::new(Vec::new());
+
+      let questions = vec![
+          Question::new(
+              "first-question",
+              "Tell me your first answer?",
+          ),
+          Question::new(
+              "second-question",
+              "Tell me your second answer?",
+          ),
+          Question::new(
+              "third-question",
+              "Tell me your third answer?",
+          ),
+      ];
+
+      let answers = ask_questions(&mut reader, &mut writer, &questions);
+
+      assert_eq!(questions[0].name, answers[0].name);
+      assert_eq!(questions[1].name, answers[1].name);
+      assert_eq!(questions[2].name, answers[2].name);
+
+      assert_eq!("First Answer", answers[0].value);
+      assert_eq!("Second Answer", answers[1].value);
+      assert_eq!("Third Answer", answers[2].value);
+
+      assert_eq!("Tell me your first answer?\nTell me your second answer?\nTell me your third answer?\n", from_utf8(writer.get_ref()).unwrap());
+  }
 }
