@@ -1,3 +1,5 @@
+use std::io;
+
 use std::path::PathBuf;
 use config::{Config, get_config_path, get_config_file_to_write, write_config};
 use inquirer::{Question, Answer, ask_question, ask_questions};
@@ -23,8 +25,10 @@ pub fn configure_cli(config_file_path: &PathBuf) -> Option<Config> {
 fn ask_questions_for_config() -> Option<Config> {
     let get_auth_token_question = Question::new("auth_token",
                                                 "What is your `auth_token` on teller.io?");
-
-    let auth_token_answer = ask_question(&get_auth_token_question);
+    let stdin = io::stdin();
+    let mut reader = stdin.lock(); // A locked stdin implements BufRead.
+    let mut writer = io::stdout();
+    let auth_token_answer = ask_question(&mut reader, &mut writer, &get_auth_token_question);
 
     let mut config = Config::new_with_auth_token_only(auth_token_answer.value);
 
@@ -57,7 +61,7 @@ fn ask_questions_for_config() -> Option<Config> {
         ),
     ];
 
-    let non_empty_answers = ask_questions(&questions);
+    let non_empty_answers = ask_questions(&mut reader, &mut writer, &questions);
     let mut fa_iter = non_empty_answers.iter();
 
     let to_account_id = |answer: &Answer| {

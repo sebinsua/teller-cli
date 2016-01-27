@@ -1,4 +1,4 @@
-use std::io::stdin;
+use std::io::{BufRead, Write};
 
 #[derive(Debug)]
 pub struct Question {
@@ -34,18 +34,24 @@ impl Answer {
     }
 }
 
-pub fn ask_question(question: &Question) -> Answer {
-    let question_name = question.name.to_owned();
-    println!("{}", question.message);
+pub fn ask_question<R, W>(reader: &mut R, mut writer: &mut W, question: &Question) -> Answer
+    where R: BufRead,
+          W: Write {
+    write!(&mut writer, "{}\n", question.message).unwrap();
+
     let mut input = String::new();
-    match stdin().read_line(&mut input) {
-        Ok(_) => Answer::new(question_name, input.trim().to_string()),
-        Err(error) => panic!("Unable to read line for {}: {}", question_name, error),
+    match reader.read_line(&mut input) {
+        Ok(_) => Answer::new(question.name.to_owned(), input.trim().to_string()),
+        Err(error) => panic!("Unable to read line for {}: {}", question.name, error),
     }
 }
 
-pub fn ask_questions(questions: &Vec<Question>) -> Vec<Answer> {
-    let answers: Vec<Answer> = questions.iter().map(ask_question).collect();
+pub fn ask_questions<R, W>(reader: &mut R, writer: &mut W, questions: &Vec<Question>) -> Vec<Answer>
+    where R: BufRead,
+          W: Write {
+    let answers: Vec<Answer> = questions.iter().map(move |question| {
+        ask_question(reader, writer, &question)
+    }).collect();
     let non_empty_answers: Vec<Answer> = answers.into_iter()
                                                 .filter(|answer| !answer.value.is_empty())
                                                 .collect();
@@ -56,6 +62,10 @@ pub fn ask_questions(questions: &Vec<Question>) -> Vec<Answer> {
 mod tests {
     use super::Question;
     use super::Answer;
+
+    use std::io::Cursor;
+    use std::str::from_utf8;
+    use super::ask_question;
 
     #[test]
     fn can_instantiate_question() {
@@ -82,4 +92,18 @@ mod tests {
         assert_eq!(expected_name, answer.name);
         assert_eq!(expected_value, answer.value);
     }
+
+    #[test]
+    fn can_ask_question() {
+       let mut reader = Cursor::new(&b"Sebastian"[..]);
+       let mut writer = Cursor::new(Vec::new());
+
+       let question = Question::new("test-question", "What's your name?");
+
+       let answer = ask_question(&mut reader, &mut writer, &question);
+
+       assert_eq!(question.name, answer.name);
+       assert_eq!("Sebastian", answer.value);
+       assert_eq!("What's your name?\n", from_utf8(writer.get_ref()).unwrap());
+   }
 }
