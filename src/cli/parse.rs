@@ -81,7 +81,7 @@ impl Decodable for OutputFormat {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum CommandType {
     ShowUsage,
     Initialise,
@@ -112,4 +112,355 @@ pub fn get_command_type(arguments: &CliArgs) -> CommandType {
         CliArgs { flag_help, flag_version, .. } if flag_help || flag_version => CommandType::None,
         _ => CommandType::ShowUsage,
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CliArgs;
+    use super::CommandType;
+    use super::get_command_type;
+
+    use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
+
+    #[test]
+    fn can_fallback_to_show_usage_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: false,
+            cmd_show: false,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ShowUsage, command_type);
+    }
+
+    #[test]
+    fn can_get_init_command_type() {
+        let args = CliArgs {
+            cmd_init: true,
+            cmd_list: false,
+            cmd_show: false,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::Initialise, command_type);
+    }
+
+    #[test]
+    fn can_get_list_accounts_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: true,
+            cmd_show: false,
+            cmd_accounts: true,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ListAccounts, command_type);
+    }
+
+    #[test]
+    fn can_get_list_transactions_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: true,
+            cmd_show: false,
+            cmd_accounts: false,
+            cmd_transactions: true,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ListTransactions, command_type);
+    }
+
+    #[test]
+    fn can_get_list_counterparties_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: true,
+            cmd_show: false,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: true,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ListCounterparties, command_type);
+    }
+
+    #[test]
+    fn can_get_list_balances_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: true,
+            cmd_show: false,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: true,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ListBalances, command_type);
+    }
+
+    #[test]
+    fn can_get_list_outgoings_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: true,
+            cmd_show: false,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: true,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ListOutgoings, command_type);
+    }
+
+    #[test]
+    fn can_get_list_incomings_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: true,
+            cmd_show: false,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: true,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ListIncomings, command_type);
+    }
+
+    #[test]
+    fn can_get_show_balance_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: false,
+            cmd_show: true,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: true,
+            cmd_outgoing: false,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ShowBalance, command_type);
+    }
+
+    #[test]
+    fn can_get_show_outgoing_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: false,
+            cmd_show: true,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: true,
+            cmd_incoming: false,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ShowOutgoing, command_type);
+    }
+
+    #[test]
+    fn can_get_show_incoming_command_type() {
+        let args = CliArgs {
+            cmd_init: false,
+            cmd_list: false,
+            cmd_show: true,
+            cmd_accounts: false,
+            cmd_transactions: false,
+            cmd_counterparties: false,
+            cmd_balances: false,
+            cmd_outgoings: false,
+            cmd_incomings: false,
+            cmd_balance: false,
+            cmd_outgoing: false,
+            cmd_incoming: true,
+            arg_account: AccountType::None,
+            flag_interval: Interval::Monthly,
+            flag_timeframe: Timeframe::Year,
+            flag_count: 0i64,
+            flag_show_description: false,
+            flag_hide_currency: false,
+            flag_output: OutputFormat::Standard,
+            flag_help: false,
+            flag_version: false,
+        };
+
+        let command_type = get_command_type(&args);
+
+        assert_eq!(CommandType::ShowIncoming, command_type);
+    }
+
 }

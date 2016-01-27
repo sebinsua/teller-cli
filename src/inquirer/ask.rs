@@ -2,7 +2,7 @@ use std::io::stdin;
 
 #[derive(Debug)]
 pub struct Question {
-    _type: String,
+    pub _type: String,
     pub name: String,
     pub message: String,
 }
@@ -19,7 +19,7 @@ impl Question {
 
 #[derive(Debug)]
 pub struct Answer {
-    _type: String,
+    pub _type: String,
     pub name: String,
     pub value: String,
 }
@@ -50,4 +50,36 @@ pub fn ask_questions(questions: &Vec<Question>) -> Vec<Answer> {
                                                 .filter(|answer| !answer.value.is_empty())
                                                 .collect();
     non_empty_answers
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Question;
+    use super::Answer;
+
+    #[test]
+    fn can_instantiate_question() {
+        let expected_type = "input";
+        let expected_name = "";
+        let expected_message = "";
+
+        let question = Question::new(expected_name, expected_message);
+
+        assert_eq!(expected_type, question._type);
+        assert_eq!(expected_name, question.name);
+        assert_eq!(expected_message, question.message);
+    }
+
+    #[test]
+    fn can_instantiate_answer() {
+        let expected_type = "input";
+        let expected_name = "";
+        let expected_value = "";
+
+        let answer = Answer::new(expected_name, expected_value);
+
+        assert_eq!(expected_type, answer._type);
+        assert_eq!(expected_name, answer.name);
+        assert_eq!(expected_value, answer.value);
+    }
 }
