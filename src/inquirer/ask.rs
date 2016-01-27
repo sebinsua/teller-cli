@@ -34,14 +34,21 @@ impl Answer {
     }
 }
 
-pub fn ask_question<R, W>(reader: &mut R, mut writer: &mut W, question: &Question) -> Answer
+pub fn ask_question<R, W>(reader: &mut R, mut writer: &mut W, question: &Question) -> Option<Answer>
     where R: BufRead,
           W: Write {
     write!(&mut writer, "{}\n", question.message).unwrap();
 
     let mut input = String::new();
     match reader.read_line(&mut input) {
-        Ok(_) => Answer::new(question.name.to_owned(), input.trim().to_string()),
+        Ok(_) => {
+            let answer_value = input.trim().to_string();
+            if !answer_value.is_empty() {
+                Some(Answer::new(question.name.to_owned(), answer_value))
+            } else {
+                None
+            }
+        },
         Err(error) => panic!("Unable to read line for {}: {}", question.name, error),
     }
 }
@@ -49,12 +56,10 @@ pub fn ask_question<R, W>(reader: &mut R, mut writer: &mut W, question: &Questio
 pub fn ask_questions<R, W>(reader: &mut R, writer: &mut W, questions: &Vec<Question>) -> Vec<Answer>
     where R: BufRead,
           W: Write {
-    let answers: Vec<Answer> = questions.iter().map(move |question| {
+    let non_empty_answers: Vec<Answer> = questions.iter().filter_map(|question| {
         ask_question(reader, writer, &question)
     }).collect();
-    let non_empty_answers: Vec<Answer> = answers.into_iter()
-                                                .filter(|answer| !answer.value.is_empty())
-                                                .collect();
+
     non_empty_answers
 }
 
@@ -100,11 +105,23 @@ mod tests {
 
        let question = Question::new("test-question", "What's your name?");
 
-       let answer = ask_question(&mut reader, &mut writer, &question);
+       let answer = ask_question(&mut reader, &mut writer, &question).unwrap();
 
        assert_eq!(question.name, answer.name);
        assert_eq!("Sebastian", answer.value);
        assert_eq!("What's your name?\n", from_utf8(writer.get_ref()).unwrap());
+   }
+
+   #[test]
+   fn can_ask_question_and_not_receive_answer() {
+       let mut reader = Cursor::new(&b"\n"[..]);
+       let mut writer = Cursor::new(Vec::new());
+
+       let question = Question::new("test-question", "What's your name?");
+
+       let answer = ask_question(&mut reader, &mut writer, &question);
+
+       assert_eq!(true, answer.is_none());
    }
 
    #[test]

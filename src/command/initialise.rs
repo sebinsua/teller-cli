@@ -28,7 +28,13 @@ fn ask_questions_for_config() -> Option<Config> {
     let stdin = io::stdin();
     let mut reader = stdin.lock(); // A locked stdin implements BufRead.
     let mut writer = io::stdout();
-    let auth_token_answer = ask_question(&mut reader, &mut writer, &get_auth_token_question);
+    let auth_token_answer = match ask_question(&mut reader, &mut writer, &get_auth_token_question) {
+        Some(auth_token_answer) => auth_token_answer,
+        None => {
+            error!("An `auth_token` needs to be entered to initialise the config.");
+            return None; // Exit the whole function returning None.
+        }
+    };
 
     let mut config = Config::new_with_auth_token_only(auth_token_answer.value);
 
@@ -85,12 +91,7 @@ fn ask_questions_for_config() -> Option<Config> {
         Some(account_id) => config.business = account_id,
     };
 
-    if config.auth_token.is_empty() {
-        error!("`auth_token` was invalid so a config could not be created");
-        None
-    } else {
-        Some(config)
-    }
+    Some(config)
 }
 
 pub fn initialise_command() -> i32 {
