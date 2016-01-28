@@ -56,23 +56,32 @@ pub fn parse_utc_date_from_transaction(t: &Transaction) -> Date<UTC> {
 const TELLER_API_SERVER_URL: &'static str = "https://api.teller.io";
 
 pub struct TellerClient<'a> {
+    client: Client,
     auth_token: &'a str,
 }
 
 impl<'a> TellerClient<'a> {
     pub fn new(auth_token: &'a str) -> TellerClient {
+        let client = Client::new();
         TellerClient {
+            client: client,
+            auth_token: auth_token,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn new_with_hyper_client(auth_token: &'a str, client: Client) -> TellerClient {
+        TellerClient {
+            client: client,
             auth_token: auth_token,
         }
     }
 
     fn get_body(&self, url: &str) -> ApiServiceResult<String> {
-        let client = Client::new();
-        let mut res = try!(client.get(url)
-                                 .header(Authorization(
-                                     Bearer { token: self.auth_token.to_string() }
-                                 ))
-                                 .send());
+        let mut res = try!(self.client.get(url)
+                               .header(Authorization(
+                                   Bearer { token: self.auth_token.to_string() }
+                               )).send());
         if res.status.is_client_error() {
             return Err(TellerClientError::AuthenticationError);
         }
@@ -189,6 +198,12 @@ impl<'a> TellerClient<'a> {
 mod tests {
     use super::{TellerClient, Account, Transaction};
 
+    use hyper;
+
+    mock_connector!(GetAccountRequest {
+        "https://api.teller.io" => include_str!("./mocks/get-account.http")
+    });
+
     #[test]
     #[allow(unused)]
     fn can_instantiate_teller_client() {
@@ -222,5 +237,25 @@ mod tests {
         };
         assert!(true);
     }
+
+    // TODO:
+    // get_accounts returns a Vec<Account>.
+    // get_transactions returns a Vec<Transaction>.
+
+    #[test]
+    fn can_get_account() {
+        let c = hyper::client::Client::with_connector(GetAccountRequest::default());
+        let client = TellerClient::new_with_hyper_client("fake-auth-token", c);
+        let account_response = client.get_account("123").unwrap();
+
+        assert_eq!("123", account_response.id);
+        assert_eq!("natwest", account_response.institution);
+        assert_eq!("current", account_response.name);
+        assert_eq!("1000.00", account_response.balance);
+        assert_eq!("GBP", account_response.currency);
+        assert_eq!("000000", account_response.bank_code);
+        assert_eq!("0000", account_response.account_number_last_4);
+    }
+
 
 }

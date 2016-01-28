@@ -1,3 +1,6 @@
+#[cfg(test)] #[macro_use]
+extern crate yup_hyper_mock;
+
 #[macro_use]
 extern crate log;
 extern crate env_logger;
