@@ -47,10 +47,14 @@ pub struct Transaction {
 }
 
 pub fn parse_utc_date_from_transaction(t: &Transaction) -> Date<UTC> {
-    let full_date = &(t.date.to_owned() + "T00:00:00-00:00");
-    let past_transaction_date_without_tz = DateTime::parse_from_rfc3339(full_date).unwrap().date();
-    let past_transaction_date = past_transaction_date_without_tz.with_timezone(&UTC);
-    past_transaction_date
+    generate_utc_date_from_date_str(&t.date)
+}
+
+pub fn generate_utc_date_from_date_str(d: &str) -> Date<UTC> {
+    let full_date = &(d.to_owned() + "T00:00:00-00:00");
+    let date_without_tz = DateTime::parse_from_rfc3339(full_date).unwrap().date();
+    let date = date_without_tz.with_timezone(&UTC);
+    date
 }
 
 const TELLER_API_SERVER_URL: &'static str = "https://api.teller.io";
@@ -148,7 +152,7 @@ impl<'a> TellerClient<'a> {
                     }
                     Some(past_transaction) => {
                         let past_transaction_date = parse_utc_date_from_transaction(&past_transaction);
-                        if past_transaction_date < from {
+                        if past_transaction_date <= from {
                             fetching = false;
                         }
                     }
@@ -162,7 +166,7 @@ impl<'a> TellerClient<'a> {
                                                .filter(|t| {
                                                    let transaction_date =
                                                        parse_utc_date_from_transaction(&t);
-                                                   transaction_date > from
+                                                   transaction_date >= from
                                                })
                                                .collect();
 
@@ -170,21 +174,26 @@ impl<'a> TellerClient<'a> {
             Ok(all_transactions)
         };
 
+        // NOTE: We need to ensure that when testing the from and to dates used
+        // are always the same.
+        let to = if cfg!(test) {
+            generate_utc_date_from_date_str("2016-01-01")
+        } else {
+            UTC::today()
+        };
+
         match *timeframe {
             Timeframe::ThreeMonths => {
-                let to = UTC::today();
                 let from = to - Duration::days(91); // close enough... 😅
 
                 page_through_transactions(from)
             }
             Timeframe::SixMonths => {
-                let to = UTC::today();
                 let from = to - Duration::days(183);
 
                 page_through_transactions(from)
             }
             Timeframe::Year => {
-                let to = UTC::today();
                 let from = to - Duration::days(365);
 
                 page_through_transactions(from)
@@ -197,6 +206,7 @@ impl<'a> TellerClient<'a> {
 #[cfg(test)]
 mod tests {
     use super::{TellerClient, Account, Transaction};
+    use cli::arg_types::Timeframe;
 
     use std::error::Error;
     use hyper;
@@ -289,10 +299,10 @@ mod tests {
     fn can_get_transactions() {
         let c = hyper::client::Client::with_connector(GetTransactionsRequest::default());
         let client = TellerClient::new_with_hyper_client("fake-auth-token", c);
-        let transactions = client.raw_transactions("123", 1, 10).unwrap();
+        let transactions = client.get_transactions("123", &Timeframe::Year).unwrap();
 
-        assert_eq!("COUNTERPARTY-1", transactions[0].counterparty);
-        assert_eq!("COUNTERPARTY-2", transactions[1].counterparty);
+        assert_eq!("COUNTERPARTY-1", transactions[9].counterparty);
+        assert_eq!("COUNTERPARTY-2", transactions[8].counterparty);
     }
 
 }

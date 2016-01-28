@@ -62,8 +62,7 @@ mod tests {
         let transactions_with_currency = teller.get_transactions_with_currency("123", &Timeframe::ThreeMonths).unwrap();
 
         assert_eq!("GBP", transactions_with_currency.currency);
-        // NOTE: I can't test transactions because get_transactions filters based on the time
-        // which I currently cannot control.
+        assert_eq!(3, transactions_with_currency.transactions.len());
     }
 
 }
