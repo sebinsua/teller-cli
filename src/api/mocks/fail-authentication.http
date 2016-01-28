@@ -1,0 +1,10 @@
+HTTP/1.1 401 Unauthorized
+cache-control: max-age=0, private, must-revalidate
+content-type: application/json; charset=utf-8
+date: Thu, 28 Jan 2016 14:08:36 GMT
+server: Teller API
+Connection: keep-alive
+
+{
+   "error":"Authorization token is invalid"
+}

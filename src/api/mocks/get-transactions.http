@@ -1,0 +1,93 @@
+HTTP/1.1 200 OK
+cache-control: max-age=0, private, must-revalidate
+content-type: application/json; charset=utf-8
+date: Thu, 28 Jan 2016 13:00:51 GMT
+server: Teller API
+Connection: keep-alive
+
+{
+   "meta":{
+      "pagination":{
+         "prev":null,
+         "next":null,
+         "last":"https://api.teller.io/accounts/123/transactions?page=1&page_size=10",
+         "first":"https://api.teller.io/accounts/123/transactions?page=1&page_size=10"
+      }
+   },
+   "links":{
+      "self":"https://api.teller.io/accounts/123/transactions?page=1&page_size=10",
+      "account":"https://api.teller.io/accounts/123"
+   },
+   "data":[
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2016-01-01",
+         "counterparty":"COUNTERPARTY-1",
+         "amount":"-50.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-12-01",
+         "counterparty":"COUNTERPARTY-2",
+         "amount":"50.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-11-01",
+         "counterparty":"COUNTERPARTY-2",
+         "amount":"-50.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-10-01",
+         "counterparty":"COUNTERPARTY-3",
+         "amount":"50.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-09-01",
+         "counterparty":"COUNTERPARTY-3",
+         "amount":"-50.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-08-01",
+         "counterparty":"COUNTERPARTY-3",
+         "amount":"100.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-07-01",
+         "counterparty":"COUNTERPARTY-4",
+         "amount":"150.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-06-01",
+         "counterparty":"COUNTERPARTY-4",
+         "amount":"-50.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-05-01",
+         "counterparty":"COUNTERPARTY-4",
+         "amount":"-25.00"
+      },
+      {
+         "type":"transaction",
+         "description":"Some description",
+         "date":"2015-01-01",
+         "counterparty":"COUNTERPARTY-4",
+         "amount":"-23.97"
+      }
+   ]
+}

@@ -5,4 +5,20 @@ date: Thu, 28 Jan 2016 13:00:51 GMT
 server: Teller API
 Connection: keep-alive
 
-{"data":{"refreshed_at":"2016-01-28T02:19:22Z","name":"current","links":{"transactions":"https://api.teller.io/accounts/123/transactions","self":"https://api.teller.io/accounts/123","direct_debits":"https://api.teller.io/accounts/123/direct_debits"},"institution":"natwest","id":"123","currency":"GBP","bank_code":"000000","balance":"1000.00","account_number_last_4":"0000"}}
+{
+   "data":{
+      "refreshed_at":"2016-01-28T02:19:22Z",
+      "name":"current",
+      "links":{
+         "transactions":"https://api.teller.io/accounts/123/transactions",
+         "self":"https://api.teller.io/accounts/123",
+         "direct_debits":"https://api.teller.io/accounts/123/direct_debits"
+      },
+      "institution":"natwest",
+      "id":"123",
+      "currency":"GBP",
+      "bank_code":"000000",
+      "balance":"1000.00",
+      "account_number_last_4":"0000"
+   }
+}

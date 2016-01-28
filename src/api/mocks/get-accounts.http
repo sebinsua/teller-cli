@@ -1,0 +1,52 @@
+HTTP/1.1 200 OK
+cache-control: max-age=0, private, must-revalidate
+content-type: application/json; charset=utf-8
+date: Thu, 28 Jan 2016 13:00:51 GMT
+server: Teller API
+Connection: keep-alive
+
+{
+   "meta":{
+      "pagination":{
+         "prev":null,
+         "next":null,
+         "last":"https://api.teller.io/accounts?page=1&page_size=250",
+         "first":"https://api.teller.io/accounts?page=1&page_size=250"
+      }
+   },
+   "links":{
+      "self":"https://api.teller.io/accounts?page=1&page_size=250"
+   },
+   "data":[
+      {
+         "refreshed_at":"2016-01-10T01:09:12Z",
+         "name":"Savings",
+         "links":{
+            "transactions":"https://api.teller.io/accounts/123/transactions",
+            "self":"https://api.teller.io/accounts/123",
+            "direct_debits":"https://api.teller.io/accounts/123/direct_debits"
+         },
+         "institution":"natwest",
+         "id":"123",
+         "currency":"GBP",
+         "bank_code":"000000",
+         "balance":"10000.00",
+         "account_number_last_4":"0000"
+      },
+      {
+         "refreshed_at":"2016-01-10T01:09:13Z",
+         "name":"Current",
+         "links":{
+            "transactions":"https://api.teller.io/accounts/456/transactions",
+            "self":"https://api.teller.io/accounts/456",
+            "direct_debits":"https://api.teller.io/accounts/456/direct_debits"
+         },
+         "institution":"natwest",
+         "id":"456",
+         "currency":"GBP",
+         "bank_code":"000001",
+         "balance":"1000.00",
+         "account_number_last_4":"0001"
+      }
+   ]
+}
