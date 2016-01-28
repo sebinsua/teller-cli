@@ -39,3 +39,31 @@ impl<'a> GetTransactionsWithCurrency for TellerClient<'a> {
         Ok(TransactionsWithCurrrency::new(transactions, currency))
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use api::client::TellerClient;
+    use super::GetTransactionsWithCurrency;
+
+    use cli::arg_types::Timeframe;
+
+    use hyper;
+    mock_connector_in_order!(GetTransactionsFollowedByGetAccount {
+        include_str!("../mocks/get-transactions.http")
+        include_str!("../mocks/get-account.http")
+    });
+
+    #[test]
+    fn can_get_transactions_with_currency() {
+        let c = hyper::client::Client::with_connector(GetTransactionsFollowedByGetAccount::default());
+        let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
+
+        let transactions_with_currency = teller.get_transactions_with_currency("123", &Timeframe::ThreeMonths).unwrap();
+
+        assert_eq!("GBP", transactions_with_currency.currency);
+        // NOTE: I can't test transactions because get_transactions filters based on the time
+        // which I currently cannot control.
+    }
+
+}
