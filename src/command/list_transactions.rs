@@ -1,9 +1,11 @@
 use config::Config;
 use api::{Transaction, TellerClient};
 use api::inform::{TransactionsWithCurrrency, GetTransactionsWithCurrency};
-use cli::arg_types::{AccountType, Timeframe};
+use cli::arg_types::{Timeframe, AccountType};
 
 use command::representations::to_aligned_table;
+
+use command::timeframe_to_date_range;
 
 fn represent_list_transactions(transactions: &Vec<Transaction>,
                                currency: &str,
@@ -42,15 +44,16 @@ fn represent_list_transactions(transactions: &Vec<Transaction>,
     print!("{}", transactions_str)
 }
 
-pub fn list_transactions_command(config: &Config,
+pub fn list_transactions_command(teller: &TellerClient,
+                                 config: &Config,
                                  account: &AccountType,
                                  timeframe: &Timeframe,
                                  show_description: &bool)
                                  -> i32 {
     info!("Calling the list transactions command");
     let account_id = config.get_account_id(&account);
-    let teller = TellerClient::new(&config.auth_token);
-    teller.get_transactions_with_currency(&account_id, &timeframe)
+    let (from, to) = timeframe_to_date_range(&timeframe);
+    teller.get_transactions_with_currency(&account_id, &from, &to)
         .map(|transactions_with_currency| {
             let TransactionsWithCurrrency { transactions, currency } = transactions_with_currency;
             represent_list_transactions(&transactions, &currency, &show_description);

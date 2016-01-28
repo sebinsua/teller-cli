@@ -1,11 +1,10 @@
-use cli::arg_types::Timeframe;
-
 use std::str::FromStr; // Use of #from_str.
 
 use std::collections::HashMap;
 use itertools::Itertools;
 
 use api::client::{TellerClient, ApiServiceResult, Transaction};
+use chrono::{Date, UTC};
 
 #[derive(Debug)]
 pub struct CounterpartiesWithCurrrency {
@@ -27,7 +26,9 @@ impl CounterpartiesWithCurrrency {
 pub trait GetCounterparties {
     fn get_counterparties(&self,
                           account_id: &str,
-                          timeframe: &Timeframe) -> ApiServiceResult<CounterpartiesWithCurrrency>;
+                          from: &Date<UTC>,
+                          to: &Date<UTC>)
+                          -> ApiServiceResult<CounterpartiesWithCurrrency>;
 }
 
 fn convert_to_counterparty_to_date_amount_list<'a>(transactions: &'a Vec<Transaction>)
@@ -60,10 +61,11 @@ fn convert_to_counterparty_to_date_amount_list<'a>(transactions: &'a Vec<Transac
 
 impl<'a> GetCounterparties for TellerClient<'a> {
     fn get_counterparties(&self,
-                              account_id: &str,
-                              timeframe: &Timeframe)
-                              -> ApiServiceResult<CounterpartiesWithCurrrency> {
-        let transactions = try!(self.get_transactions(&account_id, &timeframe));
+                          account_id: &str,
+                          from: &Date<UTC>,
+                          to: &Date<UTC>)
+                          -> ApiServiceResult<CounterpartiesWithCurrrency> {
+        let transactions = try!(self.get_transactions(&account_id, &from, &to));
         let account = try!(self.get_account(&account_id));
 
         let to_cent_integer = |amount: &str| (f64::from_str(&amount).unwrap() * 100f64).round() as i64;

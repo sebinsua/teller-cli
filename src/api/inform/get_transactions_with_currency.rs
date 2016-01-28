@@ -1,6 +1,5 @@
-use cli::arg_types::Timeframe;
-
 use api::client::{TellerClient, ApiServiceResult, Transaction};
+use chrono::{Date, UTC};
 
 #[derive(Debug)]
 pub struct TransactionsWithCurrrency {
@@ -22,16 +21,18 @@ impl TransactionsWithCurrrency {
 pub trait GetTransactionsWithCurrency {
     fn get_transactions_with_currency(&self,
                                       account_id: &str,
-                                      timeframe: &Timeframe)
+                                      from: &Date<UTC>,
+                                      to: &Date<UTC>)
                                       -> ApiServiceResult<TransactionsWithCurrrency>;
 }
 
 impl<'a> GetTransactionsWithCurrency for TellerClient<'a> {
     fn get_transactions_with_currency(&self,
                                       account_id: &str,
-                                      timeframe: &Timeframe)
+                                      from: &Date<UTC>,
+                                      to: &Date<UTC>)
                                       -> ApiServiceResult<TransactionsWithCurrrency> {
-        let transactions = try!(self.get_transactions(&account_id, &timeframe));
+        let transactions = try!(self.get_transactions(&account_id, &from, &to));
 
         let account = try!(self.get_account(&account_id));
         let currency = account.currency;
@@ -43,10 +44,8 @@ impl<'a> GetTransactionsWithCurrency for TellerClient<'a> {
 #[cfg(test)]
 mod tests {
 
-    use api::client::TellerClient;
+    use api::client::{TellerClient, generate_utc_date_from_date_str};
     use super::GetTransactionsWithCurrency;
-
-    use cli::arg_types::Timeframe;
 
     use hyper;
     mock_connector_in_order!(GetTransactionsFollowedByGetAccount {
@@ -59,10 +58,12 @@ mod tests {
         let c = hyper::client::Client::with_connector(GetTransactionsFollowedByGetAccount::default());
         let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
 
-        let transactions_with_currency = teller.get_transactions_with_currency("123", &Timeframe::ThreeMonths).unwrap();
+        let from = generate_utc_date_from_date_str("2015-01-01");
+        let to = generate_utc_date_from_date_str("2016-01-01");
+        let transactions_with_currency = teller.get_transactions_with_currency("123", &from, &to).unwrap();
 
         assert_eq!("GBP", transactions_with_currency.currency);
-        assert_eq!(3, transactions_with_currency.transactions.len());
+        assert_eq!(10, transactions_with_currency.transactions.len());
     }
 
 }

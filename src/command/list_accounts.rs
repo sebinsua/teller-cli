@@ -3,9 +3,10 @@ use api::TellerClient;
 
 use command::representations::represent_list_accounts;
 
-pub fn list_accounts_command(config: &Config) -> i32 {
+pub fn list_accounts_command(teller: &TellerClient,
+                             config: &Config)
+                             -> i32 {
     info!("Calling the list accounts command");
-    let teller = TellerClient::new(&config.auth_token);
     teller.get_accounts()
           .map(|accounts| {
               represent_list_accounts(&accounts, &config);

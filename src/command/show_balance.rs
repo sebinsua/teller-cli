@@ -8,10 +8,13 @@ fn represent_money(money_with_currency: &Money, hide_currency: &bool) {
              money_with_currency.get_balance_for_display(&hide_currency))
 }
 
-pub fn show_balance_command(config: &Config, account: &AccountType, hide_currency: &bool) -> i32 {
+pub fn show_balance_command(teller: &TellerClient,
+                            config: &Config,
+                            account: &AccountType,
+                            hide_currency: &bool)
+                            -> i32 {
     info!("Calling the show balance command");
     let account_id = config.get_account_id(&account);
-    let teller = TellerClient::new(&config.auth_token);
     teller.get_account_balance(&account_id)
           .map(|balance| {
               represent_money(&balance, &hide_currency);

@@ -1,4 +1,4 @@
-use cli::arg_types::{Interval, Timeframe};
+use cli::arg_types::Interval;
 
 use std::str::FromStr; // Use of #from_str.
 
@@ -6,6 +6,7 @@ use itertools::Itertools;
 
 use api::client::{TellerClient, ApiServiceResult, Transaction};
 use api::client::parse_utc_date_from_transaction;
+use chrono::{Date, UTC};
 
 pub type Balances = HistoricalAmountsWithCurrency;
 pub type Outgoings = HistoricalAmountsWithCurrency;
@@ -36,21 +37,24 @@ pub trait GetBalances {
     fn get_balances(&self,
                     account_id: &str,
                     interval: &Interval,
-                    timeframe: &Timeframe) -> ApiServiceResult<Balances>;
+                    from: &Date<UTC>,
+                    to: &Date<UTC>) -> ApiServiceResult<Balances>;
 }
 
 pub trait GetOutgoings {
     fn get_outgoings(&self,
                      account_id: &str,
                      interval: &Interval,
-                     timeframe: &Timeframe) -> ApiServiceResult<Outgoings>;
+                     from: &Date<UTC>,
+                     to: &Date<UTC>) -> ApiServiceResult<Outgoings>;
 }
 
 pub trait GetIncomings {
     fn get_incomings(&self,
                      account_id: &str,
                      interval: &Interval,
-                     timeframe: &Timeframe) -> ApiServiceResult<Incomings>;
+                     from: &Date<UTC>,
+                     to: &Date<UTC>) -> ApiServiceResult<Incomings>;
 }
 
 fn to_grouped_transaction_aggregates(transactions: Vec<Transaction>,
@@ -75,7 +79,8 @@ impl<'a> GetBalances for TellerClient<'a> {
     fn get_balances(&self,
                     account_id: &str,
                     interval: &Interval,
-                    timeframe: &Timeframe)
+                    from: &Date<UTC>,
+                    to: &Date<UTC>)
                     -> ApiServiceResult<Balances> {
         let sum_all = |myt: (String, Vec<Transaction>)| {
             let to_cent_integer = |t: &Transaction| {
@@ -87,7 +92,7 @@ impl<'a> GetBalances for TellerClient<'a> {
             (group_name, amount)
         };
 
-        let transactions = self.get_transactions(&account_id, &timeframe).unwrap_or(vec![]);
+        let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_transactions = to_grouped_transaction_aggregates(transactions,
                                                                               &interval,
                                                                               &sum_all);
@@ -116,7 +121,8 @@ impl<'a> GetOutgoings for TellerClient<'a> {
     fn get_outgoings(&self,
                      account_id: &str,
                      interval: &Interval,
-                     timeframe: &Timeframe)
+                     from: &Date<UTC>,
+                     to: &Date<UTC>)
                      -> ApiServiceResult<Outgoings> {
         let sum_outgoings = |myt: (String, Vec<Transaction>)| {
             let to_cent_integer = |t: &Transaction| {
@@ -132,7 +138,7 @@ impl<'a> GetOutgoings for TellerClient<'a> {
             (group_name, amount)
         };
 
-        let transactions = self.get_transactions(&account_id, &timeframe).unwrap_or(vec![]);
+        let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_outgoing = to_grouped_transaction_aggregates(transactions,
                                                                           &interval,
                                                                           &sum_outgoings);
@@ -157,7 +163,8 @@ impl<'a> GetIncomings for TellerClient<'a> {
     fn get_incomings(&self,
                      account_id: &str,
                      interval: &Interval,
-                     timeframe: &Timeframe)
+                     from: &Date<UTC>,
+                     to: &Date<UTC>)
                      -> ApiServiceResult<Incomings> {
         let sum_incomings = |myt: (String, Vec<Transaction>)| {
             let to_cent_integer = |t: &Transaction| {
@@ -173,7 +180,7 @@ impl<'a> GetIncomings for TellerClient<'a> {
             (group_name, amount)
         };
 
-        let transactions = self.get_transactions(&account_id, &timeframe).unwrap_or(vec![]);
+        let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_incoming = to_grouped_transaction_aggregates(transactions,
                                                                           &interval,
                                                                           &sum_incomings);

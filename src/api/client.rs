@@ -1,10 +1,7 @@
-use cli::arg_types::Timeframe;
-
 use hyper::{Client, Url};
 use hyper::header::{Authorization, Bearer};
 use rustc_serialize::json;
 use chrono::{Date, DateTime, UTC};
-use chrono::duration::Duration;
 
 use std::io::prelude::*; // Required for read_to_string use later.
 
@@ -133,9 +130,11 @@ impl<'a> TellerClient<'a> {
         Ok(transactions_response.data)
     }
 
+    #[allow(unused_variables)]
     pub fn get_transactions(&self,
                             account_id: &str,
-                            timeframe: &Timeframe)
+                            from: &Date<UTC>,
+                            to: &Date<UTC>)
                             -> ApiServiceResult<Vec<Transaction>> {
         let page_through_transactions = |from| -> ApiServiceResult<Vec<Transaction>> {
             let mut all_transactions = vec![];
@@ -174,39 +173,14 @@ impl<'a> TellerClient<'a> {
             Ok(all_transactions)
         };
 
-        // NOTE: We need to ensure that when testing the from and to dates used
-        // are always the same.
-        let to = if cfg!(test) {
-            generate_utc_date_from_date_str("2016-01-01")
-        } else {
-            UTC::today()
-        };
-
-        match *timeframe {
-            Timeframe::ThreeMonths => {
-                let from = to - Duration::days(91); // close enough... 😅
-
-                page_through_transactions(from)
-            }
-            Timeframe::SixMonths => {
-                let from = to - Duration::days(183);
-
-                page_through_transactions(from)
-            }
-            Timeframe::Year => {
-                let from = to - Duration::days(365);
-
-                page_through_transactions(from)
-            }
-        }
+        page_through_transactions(*from)
     }
 
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{TellerClient, Account, Transaction};
-    use cli::arg_types::Timeframe;
+    use super::{TellerClient, Account, Transaction, generate_utc_date_from_date_str};
 
     use std::error::Error;
     use hyper;
@@ -299,7 +273,10 @@ mod tests {
     fn can_get_transactions() {
         let c = hyper::client::Client::with_connector(GetTransactionsRequest::default());
         let client = TellerClient::new_with_hyper_client("fake-auth-token", c);
-        let transactions = client.get_transactions("123", &Timeframe::Year).unwrap();
+
+        let from = generate_utc_date_from_date_str("2015-01-01");
+        let to = generate_utc_date_from_date_str("2016-01-01");
+        let transactions = client.get_transactions("123", &from, &to).unwrap();
 
         assert_eq!("COUNTERPARTY-1", transactions[9].counterparty);
         assert_eq!("COUNTERPARTY-2", transactions[8].counterparty);

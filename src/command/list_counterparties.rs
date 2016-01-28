@@ -5,6 +5,8 @@ use cli::arg_types::{AccountType, Timeframe};
 
 use command::representations::to_aligned_table;
 
+use command::timeframe_to_date_range;
+
 fn represent_list_counterparties(counterparties: &Vec<(String, String)>,
                                  currency: &str,
                                  count: &i64) {
@@ -26,15 +28,16 @@ fn represent_list_counterparties(counterparties: &Vec<(String, String)>,
     print!("{}", counterparties_str)
 }
 
-pub fn list_counterparties_command(config: &Config,
+pub fn list_counterparties_command(teller: &TellerClient,
+                                   config: &Config,
                                    account: &AccountType,
                                    timeframe: &Timeframe,
                                    count: &i64)
                                    -> i32 {
     info!("Calling the list counterparties command");
     let account_id = config.get_account_id(&account);
-    let teller = TellerClient::new(&config.auth_token);
-    teller.get_counterparties(&account_id, &timeframe)
+    let (from, to) = timeframe_to_date_range(&timeframe);
+    teller.get_counterparties(&account_id, &from, &to)
           .map(|counterparties_with_currency| {
               represent_list_counterparties(&counterparties_with_currency.counterparties,
                                             &counterparties_with_currency.currency,

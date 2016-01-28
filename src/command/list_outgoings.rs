@@ -5,11 +5,14 @@ use cli::arg_types::{AccountType, OutputFormat, Interval, Timeframe};
 
 use command::representations::represent_list_amounts;
 
+use command::timeframe_to_date_range;
+
 fn represent_list_outgoings(hac: &Outgoings, output: &OutputFormat) {
     represent_list_amounts("outgoing", &hac, &output)
 }
 
-pub fn list_outgoings_command(config: &Config,
+pub fn list_outgoings_command(teller: &TellerClient,
+                              config: &Config,
                               account: &AccountType,
                               interval: &Interval,
                               timeframe: &Timeframe,
@@ -17,8 +20,8 @@ pub fn list_outgoings_command(config: &Config,
                               -> i32 {
     info!("Calling the list outgoings command");
     let account_id = config.get_account_id(&account);
-    let teller = TellerClient::new(&config.auth_token);
-    teller.get_outgoings(&account_id, &interval, &timeframe)
+    let (from, to) = timeframe_to_date_range(&timeframe);
+    teller.get_outgoings(&account_id, &interval, &from, &to)
           .map(|outgoings| {
               represent_list_outgoings(&outgoings, &output);
               0

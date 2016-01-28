@@ -14,6 +14,7 @@ mod list_incomings;
 
 use cli::{CommandType, CliArgs};
 
+use api::TellerClient;
 use config::{Config, get_config, get_config_path};
 use self::initialise::configure_cli;
 
@@ -28,6 +29,30 @@ use self::list_counterparties::list_counterparties_command;
 use self::list_balances::list_balances_command;
 use self::list_outgoings::list_outgoings_command;
 use self::list_incomings::list_incomings_command;
+
+use chrono::{Date, UTC};
+use chrono::duration::Duration;
+use cli::arg_types::Timeframe;
+use api::client::generate_utc_date_from_date_str;
+
+pub fn timeframe_to_date_range(timeframe: &Timeframe) -> (Date<UTC>, Date<UTC>){
+    // NOTE: We need to ensure that when testing the from and to dates used
+    // are always the same.
+    let to = if cfg!(test) {
+        generate_utc_date_from_date_str("2016-01-01")
+    } else {
+        UTC::today()
+    };
+
+    // This is not ideal. Might be off by a few days.
+    let from = match *timeframe {
+        Timeframe::ThreeMonths => to - Duration::days(91),
+        Timeframe::SixMonths => to - Duration::days(183),
+        Timeframe::Year => to - Duration::days(365),
+    };
+
+    (from, to)
+}
 
 fn ensure_config() -> Option<Config> {
     get_config().or_else(|| {
@@ -58,19 +83,20 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
                     1
                 }
                 Some(config) => {
+                    let teller = TellerClient::new(&config.auth_token);
                     match *command_type {
-                        CommandType::ListAccounts => list_accounts_command(&config),
+                        CommandType::ListAccounts => list_accounts_command(&teller, &config),
                         CommandType::ShowBalance => {
                             let CliArgs { ref arg_account, flag_hide_currency, .. } = *arguments;
-                            show_balance_command(&config, &arg_account, &flag_hide_currency)
+                            show_balance_command(&teller, &config, &arg_account, &flag_hide_currency)
                         }
                         CommandType::ShowOutgoing => {
                             let CliArgs { ref arg_account, flag_hide_currency, .. } = *arguments;
-                            show_outgoing_command(&config, &arg_account, &flag_hide_currency)
+                            show_outgoing_command(&teller, &config, &arg_account, &flag_hide_currency)
                         }
                         CommandType::ShowIncoming => {
                             let CliArgs { ref arg_account, flag_hide_currency, .. } = *arguments;
-                            show_incoming_command(&config, &arg_account, &flag_hide_currency)
+                            show_incoming_command(&teller, &config, &arg_account, &flag_hide_currency)
                         }
                         CommandType::ListTransactions => {
                             let CliArgs {
@@ -79,7 +105,8 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
                                 ref flag_timeframe,
                                 ..
                             } = *arguments;
-                            list_transactions_command(&config,
+                            list_transactions_command(&teller,
+                                                      &config,
                                                       &arg_account,
                                                       &flag_timeframe,
                                                       &flag_show_description)
@@ -91,7 +118,8 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
                                 flag_count,
                                 ..
                             } = *arguments;
-                            list_counterparties_command(&config,
+                            list_counterparties_command(&teller,
+                                                        &config,
                                                         &arg_account,
                                                         &flag_timeframe,
                                                         &flag_count)
@@ -104,7 +132,8 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
                                 ref flag_output,
                                 ..
                             } = *arguments;
-                            list_balances_command(&config,
+                            list_balances_command(&teller,
+                                                  &config,
                                                   &arg_account,
                                                   &flag_interval,
                                                   &flag_timeframe,
@@ -118,7 +147,8 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
                                 ref flag_output,
                                 ..
                             } = *arguments;
-                            list_outgoings_command(&config,
+                            list_outgoings_command(&teller,
+                                                   &config,
                                                    &arg_account,
                                                    &flag_interval,
                                                    &flag_timeframe,
@@ -132,7 +162,8 @@ pub fn execute(usage: &str, command_type: &CommandType, arguments: &CliArgs) -> 
                                 ref flag_output,
                                 ..
                             } = *arguments;
-                            list_incomings_command(&config,
+                            list_incomings_command(&teller,
+                                                   &config,
                                                    &arg_account,
                                                    &flag_interval,
                                                    &flag_timeframe,
