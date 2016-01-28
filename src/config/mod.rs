@@ -7,9 +7,9 @@ use std::fs::File;
 use std::io::Error as StdIoError;
 use std::io::ErrorKind;
 
-use std::io::prelude::*; // Required for read_to_string use later.
+use std::io::prelude::*; // Required for Read, Write, etc.
 
-use self::error::ConfigError;
+use config::error::ConfigError;
 
 use cli::arg_types::AccountType;
 
@@ -112,7 +112,8 @@ pub fn get_config() -> Option<Config> {
     }
 }
 
-pub fn read_config(config_file: &mut File) -> Result<Config, ConfigError> {
+pub fn read_config<R>(config_file: &mut R) -> Result<Config, ConfigError>
+    where R: Read {
     let mut content_str = String::new();
     try!(config_file.read_to_string(&mut content_str));
 
@@ -123,7 +124,8 @@ pub fn read_config(config_file: &mut File) -> Result<Config, ConfigError> {
     Ok(config)
 }
 
-pub fn write_config(config_file: &mut File, config: &Config) -> Result<(), ConfigError> {
+pub fn write_config<W>(config_file: &mut W, config: &Config) -> Result<(), ConfigError>
+    where W: Write {
     let content_str = try!(json::encode(&config));
 
     try!(config_file.write_all(content_str.as_bytes()));
@@ -140,6 +142,12 @@ mod tests {
     use std::env;
     use std::path::PathBuf;
     use super::get_config_path;
+
+    use std::io::Cursor;
+
+    use std::error::Error; // In order that err#description is in scope.
+    use std::str::from_utf8;
+    use super::{read_config, write_config};
 
     #[test]
     fn can_instantiate_config() {
@@ -180,19 +188,73 @@ mod tests {
         assert_eq!("(savings)", config.get_account_alias_for_id(&expected_savings));
     }
 
-    // test:
-    //
-    // read_config: Read trait
-    // write_config: Write trait
-    //
-    // get_config_file and get_config_file_to_write can't be tested afaik.
-    // get_config: looks like it's not possible to test without get_config_file.
-
     #[test]
     fn can_get_config_path() {
         let config_path = get_config_path();
         let home_dir = env::home_dir().unwrap_or(PathBuf::from("."));
         assert_eq!(format!("{}/.tellerrc", home_dir.display()), config_path.to_str().unwrap());
     }
+
+    #[test]
+    fn can_read_config_successfully() {
+        let mut reader = Cursor::new(
+            &b"{\"auth_token\":\"auth-token\",\"current\":\"current-id\",\"savings\":\"savings-id\",\"business\":\"business-id\"}"[..]
+        );
+
+        let config = read_config(&mut reader);
+        assert_eq!(true, config.is_ok());
+
+        let cnf = config.unwrap();
+        assert_eq!("auth-token", cnf.auth_token);
+        assert_eq!("current-id", cnf.current);
+        assert_eq!("savings-id", cnf.savings);
+        assert_eq!("business-id", cnf.business);
+    }
+
+    #[test]
+    fn can_read_config_and_error() {
+        let mut reader = Cursor::new(vec![]);
+
+        let config = read_config(&mut reader);
+        assert_eq!(true, config.is_err());
+
+        let cnf_err = config.unwrap_err();
+        assert_eq!("decoder error", cnf_err.description());
+    }
+
+    // test:
+    // write_config: Write trait
+
+    #[test]
+    fn can_write_config_successfully() {
+        let mut writer = Cursor::new(vec![]);
+
+        let config = Config::new("auth-token", "current-id", "savings-id", "business-id");
+
+        let write_state = write_config(&mut writer, &config);
+        assert_eq!(true, write_state.is_ok());
+
+        assert_eq!(
+            "{\"auth_token\":\"auth-token\",\"current\":\"current-id\",\"savings\":\"savings-id\",\"business\":\"business-id\"}",
+            from_utf8(writer.get_ref()).unwrap()
+        );
+    }
+
+    /*
+    NOTE: Currently unsure about how to test IO errors as Cursor always succeeds.
+
+    #[test]
+    fn can_write_config_and_error() {
+        let mut writer = Cursor::new();
+
+        let config = Config::new("auth-token", "current-id", "savings-id", "business-id");
+
+        let write_state = write_config(&mut writer, &config);
+        assert_eq!(true, write_state.is_err());
+
+        let cnf_err = write_state.unwrap_err();
+        assert_eq!("io error", cnf_err.description());
+    }
+    */
 
 }
