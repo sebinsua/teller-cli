@@ -111,16 +111,16 @@ impl<'a> TellerClient<'a> {
 
     pub fn raw_transactions(&self,
                             account_id: &str,
-                            count: u32,
+                            page_size: u32,
                             page: u32)
                             -> ApiServiceResult<Vec<Transaction>> {
         let mut url = Url::parse(&format!("{}/accounts/{}/transactions",
                                           TELLER_API_SERVER_URL,
                                           account_id)).unwrap();
 
-        const COUNT: &'static str = "count";
+        const PAGE_SIZE: &'static str = "page_size";
         const PAGE: &'static str = "page";
-        let query = vec![(COUNT, count.to_string()), (PAGE, page.to_string())];
+        let query = vec![(PAGE_SIZE, page_size.to_string()), (PAGE, page.to_string())];
         url.set_query_from_pairs(query.into_iter());
 
         let body = try!(self.get_body(&url.serialize()));
@@ -138,9 +138,9 @@ impl<'a> TellerClient<'a> {
 
             let mut fetching = true;
             let mut page = 1;
-            let count = 250;
+            let page_size = 250;
             while fetching {
-                let mut transactions = try!(self.raw_transactions(&account_id, count, page));
+                let mut transactions = try!(self.raw_transactions(&account_id, page_size, page));
                 match transactions.last() {
                     None => {
                         // If there are no transactions left, do not fetch forever...
@@ -198,10 +198,20 @@ impl<'a> TellerClient<'a> {
 mod tests {
     use super::{TellerClient, Account, Transaction};
 
+    use std::error::Error;
     use hyper;
 
+    mock_connector!(FailAuthenticationRequest {
+        "https://api.teller.io" => include_str!("./mocks/fail-authentication.http")
+    });
     mock_connector!(GetAccountRequest {
         "https://api.teller.io" => include_str!("./mocks/get-account.http")
+    });
+    mock_connector!(GetAccountsRequest {
+        "https://api.teller.io" => include_str!("./mocks/get-accounts.http")
+    });
+    mock_connector!(GetTransactionsRequest {
+        "https://api.teller.io" => include_str!("./mocks/get-transactions.http")
     });
 
     #[test]
@@ -238,24 +248,51 @@ mod tests {
         assert!(true);
     }
 
-    // TODO:
-    // get_accounts returns a Vec<Account>.
-    // get_transactions returns a Vec<Transaction>.
+    #[test]
+    fn can_fail_authentication() {
+        let c = hyper::client::Client::with_connector(FailAuthenticationRequest::default());
+        let client = TellerClient::new_with_hyper_client("fake-auth-token", c);
+        let get_account_state = client.get_account("123");
+
+        assert_eq!(true, get_account_state.is_err());
+
+        let auth_err = get_account_state.unwrap_err();
+        assert_eq!("Could not authenticate", auth_err.description());
+    }
 
     #[test]
     fn can_get_account() {
         let c = hyper::client::Client::with_connector(GetAccountRequest::default());
         let client = TellerClient::new_with_hyper_client("fake-auth-token", c);
-        let account_response = client.get_account("123").unwrap();
+        let account = client.get_account("123").unwrap();
 
-        assert_eq!("123", account_response.id);
-        assert_eq!("natwest", account_response.institution);
-        assert_eq!("current", account_response.name);
-        assert_eq!("1000.00", account_response.balance);
-        assert_eq!("GBP", account_response.currency);
-        assert_eq!("000000", account_response.bank_code);
-        assert_eq!("0000", account_response.account_number_last_4);
+        assert_eq!("123", account.id);
+        assert_eq!("natwest", account.institution);
+        assert_eq!("current", account.name);
+        assert_eq!("1000.00", account.balance);
+        assert_eq!("GBP", account.currency);
+        assert_eq!("000000", account.bank_code);
+        assert_eq!("0000", account.account_number_last_4);
     }
 
+    #[test]
+    fn can_get_accounts() {
+        let c = hyper::client::Client::with_connector(GetAccountsRequest::default());
+        let client = TellerClient::new_with_hyper_client("fake-auth-token", c);
+        let accounts = client.get_accounts().unwrap();
+
+        assert_eq!("Savings", accounts[0].name);
+        assert_eq!("Current", accounts[1].name);
+    }
+
+    #[test]
+    fn can_get_transactions() {
+        let c = hyper::client::Client::with_connector(GetTransactionsRequest::default());
+        let client = TellerClient::new_with_hyper_client("fake-auth-token", c);
+        let transactions = client.raw_transactions("123", 1, 10).unwrap();
+
+        assert_eq!("COUNTERPARTY-1", transactions[0].counterparty);
+        assert_eq!("COUNTERPARTY-2", transactions[1].counterparty);
+    }
 
 }
