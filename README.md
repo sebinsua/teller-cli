@@ -3,9 +3,10 @@
 
 This tool provides useful ways of interrogating your bank through your command line, and is not merely meant to be a one-to-one match with underlying APIs.
 
-It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there. Want an account? [@stevegraham can hook you up!](https://twitter.com/stevegraham)
+It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK bank, so you will need to have an account there.
 
-**:point_up_2: Heads up!** [The tests are in progress](https://github.com/sebinsua/teller-cli/issues/1)!  [v1.0.0](https://github.com/sebinsua/teller-cli/issues?q=is%3Aopen+is%3Aissue+milestone%3Av1.0.0) will be released when they are finished.
+**:point_up_2: Want an account?** [@stevegraham can hook you up!](https://twitter.com/stevegraham)
+
 
 ## Usage
 
