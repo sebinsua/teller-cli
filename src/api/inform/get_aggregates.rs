@@ -6,7 +6,7 @@ use itertools::Itertools;
 
 use api::client::{TellerClient, ApiServiceResult, Transaction};
 use api::client::parse_utc_date_from_transaction;
-use chrono::{Date, UTC};
+use chrono::{Date, Datelike, UTC};
 
 pub type Balances = HistoricalAmountsWithCurrency;
 pub type Outgoings = HistoricalAmountsWithCurrency;
@@ -57,25 +57,67 @@ pub trait GetIncomings {
                      to: &Date<UTC>) -> ApiServiceResult<Incomings>;
 }
 
+// Given an interval, create a set of date/money tuples.
+// Create a structure similar to the one given to aggregate_txs.
 fn to_grouped_transaction_aggregates(transactions: Vec<Transaction>,
+                                     from: &Date<UTC>,
+                                     to: &Date<UTC>,
                                      interval: &Interval,
                                      aggregate_txs: &Fn(DateStringToTransactions) -> (String, i64))
                                      -> Vec<(String, i64)> {
-    let mut month_year_grouped_transactions: Vec<(String, i64)> = transactions.into_iter().group_by(|t| {
+    let group_format = |date: Date<UTC>| -> String {
+        date.format("%m-%Y").to_string()
+    };
+    let get_txs_from_group = |current_date_str: &str, grouped_transactions: &Vec<DateStringToTransactions>| -> Vec<Transaction> {
+        match grouped_transactions.iter().find(|g| g.0 == current_date_str) {
+            Some(g) => g.1.clone(), // I had to make Transaction cloneable to do this...
+            None => vec![],
+        }
+    };
+
+    let month_year_grouped_transactions = transactions.into_iter().group_by(|t| {
         let transaction_date = parse_utc_date_from_transaction(&t);
         match *interval {
             Interval::Monthly => {
-                let group_name = transaction_date.format("%m-%Y").to_string();
+                let group_name = group_format(transaction_date);
                 group_name
             }
         }
-    }).map(aggregate_txs).collect();
-    month_year_grouped_transactions.reverse();
+    }).collect();
 
-    month_year_grouped_transactions
+    let mut month_year_transactions: Vec<DateStringToTransactions> = vec![];
+
+    let mut current_date = from.clone();
+    let end_date = to.clone();
+    while current_date <= end_date {
+        let current_date_str = group_format(current_date);
+
+        let txs = get_txs_from_group(&current_date_str, &month_year_grouped_transactions);
+        month_year_transactions.push((current_date_str, txs));
+
+        let next_date = if current_date.month() < 12 {
+            current_date.with_month(current_date.month() + 1).unwrap()
+        } else {
+            current_date.with_year(current_date.year() + 1).unwrap().with_month(1).unwrap()
+        };
+        current_date = next_date;
+    }
+
+    let mut month_year_aggregates = month_year_transactions.into_iter()
+                                                           .map(aggregate_txs)
+                                                           .collect::<Vec<(String, i64)>>();
+    month_year_aggregates.reverse();
+
+    month_year_aggregates
 }
 
 impl<'a> GetBalances for TellerClient<'a> {
+
+    // The amount shown is for the beginning of a month before
+    // any transactions have come in or out.
+    //
+    // NOTE: Balances will not work correctly if based off a different month
+    //       than the current account balance returned by get_accounts.
     fn get_balances(&self,
                     account_id: &str,
                     interval: &Interval,
@@ -98,6 +140,8 @@ impl<'a> GetBalances for TellerClient<'a> {
 
         let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_transactions = to_grouped_transaction_aggregates(transactions,
+                                                                              &from,
+                                                                              &to,
                                                                               &interval,
                                                                               &sum_all);
 
@@ -143,6 +187,8 @@ impl<'a> GetOutgoings for TellerClient<'a> {
 
         let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_outgoing = to_grouped_transaction_aggregates(transactions,
+                                                                          &from,
+                                                                          &to,
                                                                           &interval,
                                                                           &sum_outgoings);
 
@@ -185,6 +231,8 @@ impl<'a> GetIncomings for TellerClient<'a> {
 
         let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_incoming = to_grouped_transaction_aggregates(transactions,
+                                                                          &from,
+                                                                          &to,
                                                                           &interval,
                                                                           &sum_incomings);
 
@@ -220,20 +268,36 @@ mod tests {
         let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
 
         let from = generate_utc_date_from_date_str("2015-01-01");
-        let to = generate_utc_date_from_date_str("2016-01-01");
+        let to = generate_utc_date_from_date_str("2015-12-31");
         let agg = teller.get_balances("123", &Interval::Monthly, &from, &to).unwrap();
 
-        // TODO: Need to fix this and the other tests so that we can;
-        // 1. Test for 'current' as the final balance.
-        // 2. See the balances for the months which had no transactions.
-        // 3. Ensure that the values that we are seeing are correct and not bad implementations.
         assert_eq!("GBP", agg.currency);
         assert_eq!("01-2015", agg.historical_amounts[0].0);
-        assert_eq!("913.97", agg.historical_amounts[0].1);
-        assert_eq!("05-2015", agg.historical_amounts[1].0);
-        assert_eq!("890.00", agg.historical_amounts[1].1);
-        assert_eq!("06-2015", agg.historical_amounts[2].0);
-        assert_eq!("865.00", agg.historical_amounts[2].1);
+        assert_eq!("858.97", agg.historical_amounts[0].1);
+        assert_eq!("02-2015", agg.historical_amounts[1].0);
+        assert_eq!("835.00", agg.historical_amounts[1].1);
+        assert_eq!("03-2015", agg.historical_amounts[2].0);
+        assert_eq!("835.00", agg.historical_amounts[2].1);
+        assert_eq!("04-2015", agg.historical_amounts[3].0);
+        assert_eq!("835.00", agg.historical_amounts[3].1);
+        assert_eq!("05-2015", agg.historical_amounts[4].0);
+        assert_eq!("835.00", agg.historical_amounts[4].1);
+        assert_eq!("06-2015", agg.historical_amounts[5].0);
+        assert_eq!("810.00", agg.historical_amounts[5].1);
+        assert_eq!("07-2015", agg.historical_amounts[6].0);
+        assert_eq!("760.00", agg.historical_amounts[6].1);
+        assert_eq!("08-2015", agg.historical_amounts[7].0);
+        assert_eq!("910.00", agg.historical_amounts[7].1);
+        assert_eq!("09-2015", agg.historical_amounts[8].0);
+        assert_eq!("1010.00", agg.historical_amounts[8].1);
+        assert_eq!("10-2015", agg.historical_amounts[9].0);
+        assert_eq!("960.00", agg.historical_amounts[9].1);
+        assert_eq!("11-2015", agg.historical_amounts[10].0);
+        assert_eq!("1010.00", agg.historical_amounts[10].1);
+        assert_eq!("12-2015", agg.historical_amounts[11].0);
+        assert_eq!("950.00", agg.historical_amounts[11].1);
+        assert_eq!("current", agg.historical_amounts[12].0);
+        assert_eq!("1000.00", agg.historical_amounts[12].1);
     }
 
     #[test]
@@ -242,16 +306,34 @@ mod tests {
         let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
 
         let from = generate_utc_date_from_date_str("2015-01-01");
-        let to = generate_utc_date_from_date_str("2016-01-01");
+        let to = generate_utc_date_from_date_str("2015-12-31");
         let agg = teller.get_outgoings("123", &Interval::Monthly, &from, &to).unwrap();
 
         assert_eq!("GBP", agg.currency);
         assert_eq!("01-2015", agg.historical_amounts[0].0);
         assert_eq!("23.97", agg.historical_amounts[0].1);
-        assert_eq!("05-2015", agg.historical_amounts[1].0);
-        assert_eq!("25.00", agg.historical_amounts[1].1);
-        assert_eq!("06-2015", agg.historical_amounts[2].0);
-        assert_eq!("50.00", agg.historical_amounts[2].1);
+        assert_eq!("02-2015", agg.historical_amounts[1].0);
+        assert_eq!("0.00", agg.historical_amounts[1].1);
+        assert_eq!("03-2015", agg.historical_amounts[2].0);
+        assert_eq!("0.00", agg.historical_amounts[2].1);
+        assert_eq!("04-2015", agg.historical_amounts[3].0);
+        assert_eq!("0.00", agg.historical_amounts[3].1);
+        assert_eq!("05-2015", agg.historical_amounts[4].0);
+        assert_eq!("25.00", agg.historical_amounts[4].1);
+        assert_eq!("06-2015", agg.historical_amounts[5].0);
+        assert_eq!("50.00", agg.historical_amounts[5].1);
+        assert_eq!("07-2015", agg.historical_amounts[6].0);
+        assert_eq!("0.00", agg.historical_amounts[6].1);
+        assert_eq!("08-2015", agg.historical_amounts[7].0);
+        assert_eq!("0.00", agg.historical_amounts[7].1);
+        assert_eq!("09-2015", agg.historical_amounts[8].0);
+        assert_eq!("50.00", agg.historical_amounts[8].1);
+        assert_eq!("10-2015", agg.historical_amounts[9].0);
+        assert_eq!("0.00", agg.historical_amounts[9].1);
+        assert_eq!("11-2015", agg.historical_amounts[10].0);
+        assert_eq!("60.00", agg.historical_amounts[10].1);
+        assert_eq!("12-2015", agg.historical_amounts[11].0);
+        assert_eq!("0.00", agg.historical_amounts[11].1);
     }
 
     #[test]
@@ -260,16 +342,34 @@ mod tests {
         let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
 
         let from = generate_utc_date_from_date_str("2015-01-01");
-        let to = generate_utc_date_from_date_str("2016-01-01");
+        let to = generate_utc_date_from_date_str("2015-12-31");
         let agg = teller.get_incomings("123", &Interval::Monthly, &from, &to).unwrap();
 
         assert_eq!("GBP", agg.currency);
         assert_eq!("01-2015", agg.historical_amounts[0].0);
         assert_eq!("0.00", agg.historical_amounts[0].1);
-        assert_eq!("05-2015", agg.historical_amounts[1].0);
+        assert_eq!("02-2015", agg.historical_amounts[1].0);
         assert_eq!("0.00", agg.historical_amounts[1].1);
-        assert_eq!("06-2015", agg.historical_amounts[2].0);
+        assert_eq!("03-2015", agg.historical_amounts[2].0);
         assert_eq!("0.00", agg.historical_amounts[2].1);
+        assert_eq!("04-2015", agg.historical_amounts[3].0);
+        assert_eq!("0.00", agg.historical_amounts[3].1);
+        assert_eq!("05-2015", agg.historical_amounts[4].0);
+        assert_eq!("0.00", agg.historical_amounts[4].1);
+        assert_eq!("06-2015", agg.historical_amounts[5].0);
+        assert_eq!("0.00", agg.historical_amounts[5].1);
+        assert_eq!("07-2015", agg.historical_amounts[6].0);
+        assert_eq!("150.00", agg.historical_amounts[6].1);
+        assert_eq!("08-2015", agg.historical_amounts[7].0);
+        assert_eq!("100.00", agg.historical_amounts[7].1);
+        assert_eq!("09-2015", agg.historical_amounts[8].0);
+        assert_eq!("0.00", agg.historical_amounts[8].1);
+        assert_eq!("10-2015", agg.historical_amounts[9].0);
+        assert_eq!("50.00", agg.historical_amounts[9].1);
+        assert_eq!("11-2015", agg.historical_amounts[10].0);
+        assert_eq!("0.00", agg.historical_amounts[10].1);
+        assert_eq!("12-2015", agg.historical_amounts[11].0);
+        assert_eq!("50.00", agg.historical_amounts[11].1);
     }
 
 }

@@ -16,7 +16,11 @@ impl<'a> GetOutgoing for TellerClient<'a> {
         let currency = account.currency;
 
         let from = for_month.with_day(1).unwrap();
-        let to = from.with_month(from.month() + 1).unwrap();
+        let to = if from.month() < 12 {
+            from.with_month(from.month() + 1).unwrap()
+        } else {
+            from.with_year(from.year() + 1).unwrap().with_month(1).unwrap()
+        };
         let transactions: Vec<Transaction> = self.raw_transactions(&account_id, 250, 1)
                                                  .unwrap_or(vec![])
                                                  .into_iter()

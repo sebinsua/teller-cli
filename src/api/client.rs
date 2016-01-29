@@ -24,7 +24,7 @@ struct TransactionsResponse {
     data: Vec<Transaction>,
 }
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, RustcDecodable, Clone)]
 pub struct Account {
     pub name: String,
     pub institution: String,
@@ -35,7 +35,7 @@ pub struct Account {
     pub account_number_last_4: String,
 }
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, RustcDecodable, Clone)]
 pub struct Transaction {
     pub description: String,
     pub date: String,

@@ -1,6 +1,6 @@
 [package]
 name = "teller_cli"
-version = "0.0.6"
+version = "0.0.7"
 authors = ["Seb Insua <me@sebinsua.com>"]
 
 [[bin]]
