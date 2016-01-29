@@ -1,4 +1,4 @@
-use chrono::{UTC, Datelike};
+use chrono::{UTC, Date, Datelike};
 
 use std::str::FromStr; // Use of #from_str.
 
@@ -7,22 +7,23 @@ use api::client::parse_utc_date_from_transaction;
 use api::inform::Money;
 
 pub trait GetIncoming {
-    fn get_incoming(&self, account_id: &str) -> ApiServiceResult<Money>;
+    fn get_incoming(&self, account_id: &str, for_month: &Date<UTC>) -> ApiServiceResult<Money>;
 }
 
 impl<'a> GetIncoming for TellerClient<'a> {
-    fn get_incoming(&self, account_id: &str) -> ApiServiceResult<Money> {
+    fn get_incoming(&self, account_id: &str, for_month: &Date<UTC>) -> ApiServiceResult<Money> {
         let account = try!(self.get_account(&account_id));
         let currency = account.currency;
 
-        let from = UTC::today().with_day(1).unwrap();
+        let from = for_month.with_day(1).unwrap();
+        let to = from.with_month(from.month() + 1).unwrap();
         let transactions: Vec<Transaction> = self.raw_transactions(&account_id, 250, 1)
                                                  .unwrap_or(vec![])
                                                  .into_iter()
                                                  .filter(|t| {
                                                      let transaction_date =
                                                          parse_utc_date_from_transaction(&t);
-                                                     transaction_date >= from
+                                                     from <= transaction_date && transaction_date <= to
                                                  })
                                                  .collect();
 
@@ -43,7 +44,7 @@ impl<'a> GetIncoming for TellerClient<'a> {
 #[cfg(test)]
 mod tests {
 
-    use api::client::TellerClient;
+    use api::client::{TellerClient, generate_utc_date_from_date_str};
     use super::GetIncoming;
 
     use hyper;
@@ -57,8 +58,8 @@ mod tests {
         let c = hyper::client::Client::with_connector(GetAccountFollowedByGetTransactions::default());
         let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
 
-        // TODO: We need to fix this by injecting in the current month!
-        let money = teller.get_incoming("123").unwrap();
+        let current_month = generate_utc_date_from_date_str("2016-01-01");
+        let money = teller.get_incoming("123", &current_month).unwrap();
 
         assert_eq!("0.00 GBP", money.get_balance_for_display(&false));
     }

@@ -7,7 +7,6 @@ It uses [Teller](http://teller.io) behind-the-scenes to interact with your UK ba
 
 **:point_up_2: Want an account?** [@stevegraham can hook you up!](https://twitter.com/stevegraham)
 
-
 ## Usage
 
 `teller show balance current` will show you your current account's balance.
