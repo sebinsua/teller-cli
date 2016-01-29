@@ -57,8 +57,6 @@ pub trait GetIncomings {
                      to: &Date<UTC>) -> ApiServiceResult<Incomings>;
 }
 
-// Given an interval, create a set of date/money tuples.
-// Create a structure similar to the one given to aggregate_txs.
 fn to_grouped_transaction_aggregates(transactions: Vec<Transaction>,
                                      from: &Date<UTC>,
                                      to: &Date<UTC>,
