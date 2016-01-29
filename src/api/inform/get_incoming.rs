@@ -22,7 +22,7 @@ impl<'a> GetIncoming for TellerClient<'a> {
                                                  .filter(|t| {
                                                      let transaction_date =
                                                          parse_utc_date_from_transaction(&t);
-                                                     transaction_date > from
+                                                     transaction_date >= from
                                                  })
                                                  .collect();
 
@@ -38,4 +38,29 @@ impl<'a> GetIncoming for TellerClient<'a> {
 
         Ok(Money::new(from_cent_integer_to_float_string(incoming), currency))
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use api::client::TellerClient;
+    use super::GetIncoming;
+
+    use hyper;
+    mock_connector_in_order!(GetAccountFollowedByGetTransactions {
+        include_str!("../mocks/get-account.http")
+        include_str!("../mocks/get-transactions.http")
+    });
+
+    #[test]
+    fn can_get_incoming() {
+        let c = hyper::client::Client::with_connector(GetAccountFollowedByGetTransactions::default());
+        let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
+
+        // TODO: We need to fix this by injecting in the current month!
+        let money = teller.get_incoming("123").unwrap();
+
+        assert_eq!("0.00 GBP", money.get_balance_for_display(&false));
+    }
+
 }

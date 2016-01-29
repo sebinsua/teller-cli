@@ -24,7 +24,7 @@ Connection: keep-alive
          "description":"Some description",
          "date":"2016-01-01",
          "counterparty":"COUNTERPARTY-1",
-         "amount":"-50.00"
+         "amount":"-55.00"
       },
       {
          "type":"transaction",
@@ -38,7 +38,7 @@ Connection: keep-alive
          "description":"Some description",
          "date":"2015-11-01",
          "counterparty":"COUNTERPARTY-2",
-         "amount":"-50.00"
+         "amount":"-60.00"
       },
       {
          "type":"transaction",

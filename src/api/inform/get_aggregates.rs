@@ -92,14 +92,14 @@ impl<'a> GetBalances for TellerClient<'a> {
             (group_name, amount)
         };
 
+        let account = try!(self.get_account(&account_id));
+        let current_balance = (f64::from_str(&account.balance).unwrap() * 100f64).round() as i64;
+        let currency = account.currency;
+
         let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_transactions = to_grouped_transaction_aggregates(transactions,
                                                                               &interval,
                                                                               &sum_all);
-
-        let account = try!(self.get_account(&account_id));
-        let current_balance = (f64::from_str(&account.balance).unwrap() * 100f64).round() as i64;
-        let currency = account.currency;
 
         let mut historical_amounts: Vec<IntervalAmount> = vec![];
         historical_amounts.push(("current".to_string(),
@@ -138,13 +138,13 @@ impl<'a> GetOutgoings for TellerClient<'a> {
             (group_name, amount)
         };
 
+        let account = try!(self.get_account(&account_id));
+        let currency = account.currency;
+
         let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_outgoing = to_grouped_transaction_aggregates(transactions,
                                                                           &interval,
                                                                           &sum_outgoings);
-
-        let account = try!(self.get_account(&account_id));
-        let currency = account.currency;
 
         let from_cent_integer_to_float_string = |amount: i64| format!("{:.2}", amount as f64 / 100f64);
 
@@ -180,13 +180,13 @@ impl<'a> GetIncomings for TellerClient<'a> {
             (group_name, amount)
         };
 
+        let account = try!(self.get_account(&account_id));
+        let currency = account.currency;
+
         let transactions = self.get_transactions(&account_id, &from, &to).unwrap_or(vec![]);
         let month_year_total_incoming = to_grouped_transaction_aggregates(transactions,
                                                                           &interval,
                                                                           &sum_incomings);
-
-        let account = try!(self.get_account(&account_id));
-        let currency = account.currency;
 
         let from_cent_integer_to_float_string = |amount: i64| format!("{:.2}", amount as f64 / 100f64);
 
@@ -199,4 +199,77 @@ impl<'a> GetIncomings for TellerClient<'a> {
 
         Ok(HistoricalAmountsWithCurrency::new(historical_amounts, currency))
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use cli::arg_types::Interval;
+
+    use api::client::{TellerClient, generate_utc_date_from_date_str};
+    use super::{GetBalances, GetOutgoings, GetIncomings};
+
+    use hyper;
+    mock_connector_in_order!(GetAccountFollowedByGetTransactions {
+        include_str!("../mocks/get-account.http")
+        include_str!("../mocks/get-transactions.http")
+    });
+
+    #[test]
+    fn can_get_balances() {
+        let c = hyper::client::Client::with_connector(GetAccountFollowedByGetTransactions::default());
+        let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
+
+        let from = generate_utc_date_from_date_str("2015-01-01");
+        let to = generate_utc_date_from_date_str("2016-01-01");
+        let agg = teller.get_balances("123", &Interval::Monthly, &from, &to).unwrap();
+
+        // TODO: Need to fix this and the other tests so that we can;
+        // 1. Test for 'current' as the final balance.
+        // 2. See the balances for the months which had no transactions.
+        // 3. Ensure that the values that we are seeing are correct and not bad implementations.
+        assert_eq!("GBP", agg.currency);
+        assert_eq!("01-2015", agg.historical_amounts[0].0);
+        assert_eq!("913.97", agg.historical_amounts[0].1);
+        assert_eq!("05-2015", agg.historical_amounts[1].0);
+        assert_eq!("890.00", agg.historical_amounts[1].1);
+        assert_eq!("06-2015", agg.historical_amounts[2].0);
+        assert_eq!("865.00", agg.historical_amounts[2].1);
+    }
+
+    #[test]
+    fn can_get_outgoings() {
+        let c = hyper::client::Client::with_connector(GetAccountFollowedByGetTransactions::default());
+        let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
+
+        let from = generate_utc_date_from_date_str("2015-01-01");
+        let to = generate_utc_date_from_date_str("2016-01-01");
+        let agg = teller.get_outgoings("123", &Interval::Monthly, &from, &to).unwrap();
+
+        assert_eq!("GBP", agg.currency);
+        assert_eq!("01-2015", agg.historical_amounts[0].0);
+        assert_eq!("23.97", agg.historical_amounts[0].1);
+        assert_eq!("05-2015", agg.historical_amounts[1].0);
+        assert_eq!("25.00", agg.historical_amounts[1].1);
+        assert_eq!("06-2015", agg.historical_amounts[2].0);
+        assert_eq!("50.00", agg.historical_amounts[2].1);
+    }
+
+    #[test]
+    fn can_get_incomings() {
+        let c = hyper::client::Client::with_connector(GetAccountFollowedByGetTransactions::default());
+        let teller = TellerClient::new_with_hyper_client("fake-auth-token", c);
+
+        let from = generate_utc_date_from_date_str("2015-01-01");
+        let to = generate_utc_date_from_date_str("2016-01-01");
+        let agg = teller.get_incomings("123", &Interval::Monthly, &from, &to).unwrap();
+
+        assert_eq!("GBP", agg.currency);
+        assert_eq!("01-2015", agg.historical_amounts[0].0);
+        assert_eq!("0.00", agg.historical_amounts[0].1);
+        assert_eq!("05-2015", agg.historical_amounts[1].0);
+        assert_eq!("0.00", agg.historical_amounts[1].1);
+        assert_eq!("06-2015", agg.historical_amounts[2].0);
+        assert_eq!("0.00", agg.historical_amounts[2].1);
+    }
+
 }
