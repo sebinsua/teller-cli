@@ -122,9 +122,9 @@ impl<'a> TellerClient<'a> {
         const PAGE_SIZE: &'static str = "page_size";
         const PAGE: &'static str = "page";
         let query = vec![(PAGE_SIZE, page_size.to_string()), (PAGE, page.to_string())];
-        url.set_query_from_pairs(query.into_iter());
+        url.query_pairs_mut().clear().extend_pairs(query.into_iter());
 
-        let body = try!(self.get_body(&url.serialize()));
+        let body = try!(self.get_body(&url.as_str()));
         let transactions_response: TransactionsResponse = try!(json::decode(&body));
 
         Ok(transactions_response.data)
