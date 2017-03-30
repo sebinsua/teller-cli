@@ -22,7 +22,7 @@ pub fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
     for (idx, account) in accounts.iter().enumerate() {
         let row_number = (idx + 1) as u32;
         let account_alias = config.get_account_alias_for_id(&account.id);
-        let new_account_row = format!("{} {}\t{}\t****{}\t{}\t{}\n",
+        let new_account_row = format!("{} {}\t{}\t{}\t{}\t{}\n",
                                       row_number,
                                       account_alias,
                                       account.name,
