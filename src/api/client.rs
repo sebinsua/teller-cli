@@ -9,38 +9,33 @@ use api::error::TellerClientError;
 
 pub type ApiServiceResult<T> = Result<T, TellerClientError>;
 
-#[derive(Debug, RustcDecodable)]
-struct AccountResponse {
-    data: Account,
-}
+type AccountResponse = Account;
 
-#[derive(Debug, RustcDecodable)]
-struct AccountsResponse {
-    data: Vec<Account>,
-}
+type AccountsResponse = Vec<Account>;
 
-#[derive(Debug, RustcDecodable)]
-struct TransactionsResponse {
-    data: Vec<Transaction>,
-}
+type TransactionsResponse = Vec<Transaction>;
 
 #[derive(Debug, RustcDecodable, Clone)]
 pub struct Account {
-    pub name: String,
-    pub institution: String,
-    pub id: String,
-    pub currency: String,
-    pub bank_code: String,
+    pub account_number: String,
     pub balance: String,
-    pub account_number_last_4: String,
+    pub bank_code: String,
+    pub currency: String,
+    // pub enrollment_id: String,
+    pub id: String,
+    pub institution: String,
+    pub name: String,
 }
 
 #[derive(Debug, RustcDecodable, Clone)]
 pub struct Transaction {
-    pub description: String,
-    pub date: String,
-    pub counterparty: String,
     pub amount: String,
+    pub counterparty: String,
+    pub date: String,
+    pub description: String,
+    // pub id: String,
+    // pub running_balance: String,
+    // pub type: String,
 }
 
 pub fn parse_utc_date_from_transaction(t: &Transaction) -> Date<UTC> {
@@ -100,14 +95,14 @@ impl<'a> TellerClient<'a> {
         let body = try!(self.get_body(&format!("{}/accounts", TELLER_API_SERVER_URL)));
         let accounts_response: AccountsResponse = try!(json::decode(&body));
 
-        Ok(accounts_response.data)
+        Ok(accounts_response)
     }
 
     pub fn get_account(&self, account_id: &str) -> ApiServiceResult<Account> {
         let body = try!(self.get_body(&format!("{}/accounts/{}", TELLER_API_SERVER_URL, account_id)));
         let account_response: AccountResponse = try!(json::decode(&body));
 
-        Ok(account_response.data)
+        Ok(account_response)
     }
 
     pub fn raw_transactions(&self,
@@ -127,7 +122,7 @@ impl<'a> TellerClient<'a> {
         let body = try!(self.get_body(&url.as_str()));
         let transactions_response: TransactionsResponse = try!(json::decode(&body));
 
-        Ok(transactions_response.data)
+        Ok(transactions_response)
     }
 
     #[allow(unused_variables)]
@@ -215,7 +210,7 @@ mod tests {
             currency: "GBP".to_string(),
             bank_code: "00000000".to_string(),
             balance: "1000.00".to_string(),
-            account_number_last_4: "0000".to_string(),
+            account_number: "00000000".to_string(),
         };
         assert!(true);
     }
@@ -256,7 +251,7 @@ mod tests {
         assert_eq!("1000.00", account.balance);
         assert_eq!("GBP", account.currency);
         assert_eq!("000000", account.bank_code);
-        assert_eq!("0000", account.account_number_last_4);
+        assert_eq!("00000000", account.account_number);
     }
 
     #[test]

@@ -5,89 +5,125 @@ date: Thu, 28 Jan 2016 13:00:51 GMT
 server: Teller API
 Connection: keep-alive
 
-{
-   "meta":{
-      "pagination":{
-         "prev":null,
-         "next":null,
-         "last":"https://api.teller.io/accounts/123/transactions?page=1&page_size=10",
-         "first":"https://api.teller.io/accounts/123/transactions?page=1&page_size=10"
-      }
+[
+   {
+      "amount":"-55.00",
+      "counterparty":"COUNTERPARTY-1",
+      "date":"2016-01-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
+      },
+      "running_balance": "15000.00",
+      "type":"transaction"
    },
-   "links":{
-      "self":"https://api.teller.io/accounts/123/transactions?page=1&page_size=10",
-      "account":"https://api.teller.io/accounts/123"
+   {
+      "amount":"50.00",
+      "counterparty":"COUNTERPARTY-2",
+      "date":"2015-12-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
+      },
+      "running_balance": "15000.00",
+      "type":"transaction"
    },
-   "data":[
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2016-01-01",
-         "counterparty":"COUNTERPARTY-1",
-         "amount":"-55.00"
+   {
+      "amount":"-60.00",
+      "counterparty":"COUNTERPARTY-2",
+      "date":"2015-11-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
       },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-12-01",
-         "counterparty":"COUNTERPARTY-2",
-         "amount":"50.00"
+      "running_balance": "15000.00",
+      "type":"transaction"
+   },
+   {
+      "amount":"50.00",
+      "counterparty":"COUNTERPARTY-2",
+      "date":"2015-10-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
       },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-11-01",
-         "counterparty":"COUNTERPARTY-2",
-         "amount":"-60.00"
+      "running_balance": "15000.00",
+      "type":"transaction"
+   },
+   {
+      "amount":"-50.00",
+      "counterparty":"COUNTERPARTY-2",
+      "date":"2015-09-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
       },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-10-01",
-         "counterparty":"COUNTERPARTY-3",
-         "amount":"50.00"
+      "running_balance": "15000.00",
+      "type":"transaction"
+   },
+   {
+      "amount":"100.00",
+      "counterparty":"COUNTERPARTY-3",
+      "date":"2015-08-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
       },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-09-01",
-         "counterparty":"COUNTERPARTY-3",
-         "amount":"-50.00"
+      "running_balance": "15000.00",
+      "type":"transaction"
+   },
+   {
+      "amount":"150.00",
+      "counterparty":"COUNTERPARTY-4",
+      "date":"2015-07-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
       },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-08-01",
-         "counterparty":"COUNTERPARTY-3",
-         "amount":"100.00"
+      "running_balance": "15000.00",
+      "type":"transaction"
+   },
+   {
+      "amount":"-50.00",
+      "counterparty":"COUNTERPARTY-4",
+      "date":"2015-06-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
       },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-07-01",
-         "counterparty":"COUNTERPARTY-4",
-         "amount":"150.00"
+      "running_balance": "15000.00",
+      "type":"transaction"
+   },
+   {
+      "amount":"-25.00",
+      "counterparty":"COUNTERPARTY-4",
+      "date":"2015-05-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
       },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-06-01",
-         "counterparty":"COUNTERPARTY-4",
-         "amount":"-50.00"
+      "running_balance": "15000.00",
+      "type":"transaction"
+   },
+   {
+      "amount":"-23.97",
+      "counterparty":"COUNTERPARTY-4",
+      "date":"2015-01-01",
+      "description":"Some description",
+      "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
+      "links": {
+          "self": "https://api.teller.io/accounts/46dfe588-3e56-4a99-8cc6-241ad358d4b1/transactions/c4232041-3e9e-4fae-a418-925f63fbbd20"
       },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-05-01",
-         "counterparty":"COUNTERPARTY-4",
-         "amount":"-25.00"
-      },
-      {
-         "type":"transaction",
-         "description":"Some description",
-         "date":"2015-01-01",
-         "counterparty":"COUNTERPARTY-4",
-         "amount":"-23.97"
-      }
-   ]
-}
+      "running_balance": "15000.00",
+      "type":"transaction"
+   }
+]

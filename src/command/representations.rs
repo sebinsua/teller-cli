@@ -26,7 +26,7 @@ pub fn represent_list_accounts(accounts: &Vec<Account>, config: &Config) {
                                       row_number,
                                       account_alias,
                                       account.name,
-                                      account.account_number_last_4,
+                                      account.account_number,
                                       account.balance,
                                       account.currency);
         accounts_table = accounts_table + &new_account_row;
