@@ -181,3 +181,9 @@ This relates to the following error:
 src/openssl_shim.c:1:10: fatal error: 'openssl/hmac.h' file not found
 #include <openssl/hmac.h>
 ```
+
+If `brew` complains about not being able to force-link `openssl` then you could try building like this:
+
+```sh
+OPENSSL_INCLUDE_DIR=/usr/local/opt/openssl/include DEP_OPENSSL_INCLUDE=/usr/local/opt/openssl/include cargo build
+```
