@@ -1,6 +1,6 @@
 [root]
 name = "teller_cli"
-version = "0.0.8"
+version = "0.0.9"
 dependencies = [
  "chrono 0.2.22 (registry+https://github.com/rust-lang/crates.io-index)",
  "docopt 0.6.81 (registry+https://github.com/rust-lang/crates.io-index)",

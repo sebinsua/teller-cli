@@ -44,7 +44,7 @@ Connection: keep-alive
    },
    {
       "amount":"50.00",
-      "counterparty":"COUNTERPARTY-2",
+      "counterparty":"COUNTERPARTY-3",
       "date":"2015-10-01",
       "description":"Some description",
       "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",
@@ -56,7 +56,7 @@ Connection: keep-alive
    },
    {
       "amount":"-50.00",
-      "counterparty":"COUNTERPARTY-2",
+      "counterparty":"COUNTERPARTY-3",
       "date":"2015-09-01",
       "description":"Some description",
       "id": "c4232041-3e9e-4fae-a418-925f63fbbd20",

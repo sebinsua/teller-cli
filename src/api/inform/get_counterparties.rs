@@ -124,12 +124,14 @@ mod tests {
         let cpts = teller.get_counterparties("123", &from, &to).unwrap();
 
         assert_eq!("GBP", cpts.currency);
-        assert_eq!("COUNTERPARTY-1", cpts.counterparties[0].0);
-        assert_eq!("55.00", cpts.counterparties[0].1);
-        assert_eq!("COUNTERPARTY-4", cpts.counterparties[1].0);
-        assert_eq!("98.97", cpts.counterparties[1].1);
+        assert_eq!("COUNTERPARTY-3", cpts.counterparties[0].0);
+        assert_eq!("50.00", cpts.counterparties[0].1);
+        assert_eq!("COUNTERPARTY-1", cpts.counterparties[1].0);
+        assert_eq!("55.00", cpts.counterparties[1].1);
         assert_eq!("COUNTERPARTY-2", cpts.counterparties[2].0);
-        assert_eq!("110.00", cpts.counterparties[2].1);
+        assert_eq!("60.00", cpts.counterparties[2].1);
+        assert_eq!("COUNTERPARTY-4", cpts.counterparties[3].0);
+        assert_eq!("98.97", cpts.counterparties[3].1);
     }
 
 }
